@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build and test output
+coverage/
+dist/
+*.tgz
+
+# Expo
+.expo/
+.expo-shared/
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.mobileprovision
+*.p8
+*.p12
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
