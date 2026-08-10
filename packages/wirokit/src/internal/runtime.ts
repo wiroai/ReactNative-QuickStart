@@ -116,7 +116,7 @@ export function rethrowAbortError(error: unknown): void {
   }
 }
 
-function createAbortError(): Error {
+export function createAbortError(): Error {
   if (typeof DOMException === 'function') {
     return new DOMException('The operation was aborted.', 'AbortError');
   }

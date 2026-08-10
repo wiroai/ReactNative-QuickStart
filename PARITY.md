@@ -19,3 +19,20 @@ It will expand as each porting step is completed.
 
 Wire-visible endpoint, retry, status-code, and identifier rules remain aligned
 with the source SDKs.
+
+## Step 3 — HTTP, authentication, and retries
+
+| Area                 | React Native behavior                                    | Reason                                                   |
+| -------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
+| Production transport | Expo Go `fetch` with `AbortSignal`                       | No custom native module                                  |
+| HMAC                 | Audited pure-JavaScript `@noble/hashes`                  | Runs in Hermes without native crypto or RNG              |
+| User agent           | `WiroKit-ReactNative/0.1.0`, best-effort                 | React Native may replace `User-Agent`, especially on iOS |
+| Cancellation         | Native `AbortError` is preserved                         | Matches React Native async conventions                   |
+| Disposal             | Client aborts in-flight request and retry-delay work     | Matches Kotlin lifecycle hardening                       |
+| Proxy headers        | Caller cannot replace SDK `User-Agent` or `Content-Type` | Matches Kotlin header hardening                          |
+| Billable retries     | `/Run/*` and `/File/Upload` never retry                  | Matches Kotlin path-level safety gate                    |
+| Invalid raw bodies   | Stored diagnostically, never used as error messages      | Prevents response-body leakage in rendered errors        |
+
+HMAC input, nonce regeneration, retry defaults, `Retry-After` delta-seconds,
+HTTP status mapping, and structured envelope extraction remain wire-compatible
+with Swift and Kotlin.

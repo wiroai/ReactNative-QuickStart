@@ -1,3 +1,10 @@
+export {
+  WiroClient,
+  type WiroApiKeyClientOptions,
+  type WiroClientOptions,
+  type WiroPostJsonOptions,
+  type WiroProxyClientOptions,
+} from './client/wiro-client';
 export { WiroAuthType, WiroClientDefaults } from './config/auth';
 export {
   WiroClientLimits,
@@ -56,4 +63,13 @@ export {
   WiroLogLevel,
   type WiroLogger,
 } from './logging/wiro-logging';
+export {
+  FetchWiroHttpTransport,
+  type FetchWiroHttpTransportOptions,
+  WiroHttpRequest,
+  type WiroHttpRequestOptions,
+  WiroHttpResponse,
+  type WiroHttpResponseOptions,
+  type WiroHttpTransport,
+} from './transport/http-transport';
 export { WIROKIT_VERSION, WiroKitInfo } from './wiro-kit-info';

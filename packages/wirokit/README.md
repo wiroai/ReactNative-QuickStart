@@ -13,6 +13,7 @@ pnpm add @wiro-ai/wirokit-react-native
 ```ts
 import {
   stringifyWiroJson,
+  WiroClient,
   WiroKitInfo,
   WiroModelId,
   WiroValue,
@@ -27,11 +28,37 @@ const input = {
 };
 
 console.log(stringifyWiroJson(input));
+
+const client = new WiroClient({
+  apiKey: 'your-api-key',
+  apiSecret: 'your-api-secret', // Omit for API-key auth.
+});
+
+// Proxy mode keeps long-lived Wiro credentials out of shipped apps.
+const proxyClient = new WiroClient({
+  proxyUrl: 'https://your-proxy.example.com/wiro',
+  headers: { Authorization: 'Bearer short-lived-token' },
+});
+
+client.close();
+proxyClient.close();
 ```
 
 Core identifiers, lossless JSON values, Expo-compatible file inputs, retry
-configuration, limits, logging, and typed errors are available. The network
-client API is being implemented incrementally.
+configuration, limits, logging, typed errors, and the injectable `fetch`
+transport are available. Authenticated requests support API-key, signature,
+and proxy modes. Production mobile apps should prefer proxy mode instead of
+embedding long-lived API secrets.
 
 This package does not use custom native modules and does not depend on React UI
-or Expo UI packages.
+or Expo UI packages. HMAC-SHA256 uses the audited, zero-dependency
+`@noble/hashes` JavaScript implementation and does not require native crypto or
+random-number APIs.
+
+## React Native networking note
+
+The SDK sends `User-Agent: WiroKit-ReactNative/0.1.0`. React Native's native
+network stack can replace this header, especially with iOS `NSURLSession` or
+remote JavaScript debugging. Expo Go cannot install the native
+`RCTSetCustomNSURLSessionConfigurationProvider` override, so the header is
+best-effort in Expo Go. Authentication does not depend on `User-Agent`.

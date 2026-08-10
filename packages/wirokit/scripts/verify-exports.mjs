@@ -3,6 +3,8 @@ import { createRequire } from 'node:module';
 
 import {
   WIROKIT_VERSION as importedVersion,
+  FetchWiroHttpTransport,
+  WiroClient,
   WiroKitInfo as importedInfo,
   WiroModelId,
   WiroValidationError,
@@ -19,7 +21,12 @@ assert.equal(requiredSdk.WiroKitInfo.version, importedVersion);
 assert.equal(new WiroModelId('owner', 'project').slug, 'owner/project');
 assert.equal(WiroValue.numberLexeme('1.2300').rawValue, '1.2300');
 assert.ok(new WiroValidationError('Invalid.') instanceof Error);
+const client = new WiroClient({ apiKey: 'test-api-key' });
+assert.equal(client.authType, 'apiKey');
+assert.equal(typeof FetchWiroHttpTransport, 'function');
+client.close();
 assert.equal(
   new requiredSdk.WiroModelId('owner', 'project').slug,
   'owner/project',
 );
+assert.equal(typeof requiredSdk.WiroClient, 'function');

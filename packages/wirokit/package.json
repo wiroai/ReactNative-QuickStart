@@ -44,7 +44,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "verify:exports": "node scripts/verify-exports.mjs && tsc -p tsconfig.exports.json"
+    "verify:exports": "node scripts/verify-exports.mjs && tsc -p tsconfig.exports.json",
+    "verify:hmac:hermes": "node scripts/verify-hmac-hermes.mjs"
   },
   "peerDependencies": {
     "react-native": ">=0.76.0"
@@ -54,5 +55,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.3.0"
   }
 }

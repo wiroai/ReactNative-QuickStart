@@ -30,6 +30,20 @@ export function redactUrl(value: string): string {
   }
 }
 
+export function redactSensitiveText(
+  value: string,
+  sensitiveValues: readonly string[],
+): string {
+  let redacted = value;
+  const uniqueValues = [...new Set(sensitiveValues)]
+    .filter((sensitive) => sensitive.length > 0)
+    .sort((left, right) => right.length - left.length);
+  for (const sensitive of uniqueValues) {
+    redacted = redacted.split(sensitive).join('[REDACTED]');
+  }
+  return redacted;
+}
+
 export function errorType(error: unknown): string {
   if (error instanceof Error) {
     return error.name || 'Error';
