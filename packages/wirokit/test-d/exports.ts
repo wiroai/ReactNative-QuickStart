@@ -13,6 +13,8 @@ import {
   WiroModelSort,
   type WiroPaginatedResult,
   type WiroRunResult,
+  type WiroSocketEvent,
+  type WiroSocketSessionFactory,
   type WiroTaskResult,
   type WiroTask,
   WiroTaskId,
@@ -64,6 +66,22 @@ const subscriptionStream: Promise<AsyncIterable<WiroTaskUpdate>> =
   client.subscribeStream(request, {
     timeoutMs: WiroTracking.defaultTimeoutMs,
   });
+const socketWatch: AsyncIterable<WiroSocketEvent> =
+  client.watchTaskSocket(taskToken);
+const socketFactory: WiroSocketSessionFactory = {
+  async connect() {
+    return {
+      async close() {},
+      async receiveFrame() {
+        return {
+          kind: 'text' as const,
+          text: '{"type":"task_start"}',
+        };
+      },
+      async sendText() {},
+    };
+  },
+};
 const contentSource: WiroFileContentSource = {
   async read(input) {
     return new WiroBytesFileContent(
@@ -92,4 +110,6 @@ void terminal;
 void watch;
 void subscription;
 void subscriptionStream;
+void socketWatch;
+void socketFactory;
 void upload;

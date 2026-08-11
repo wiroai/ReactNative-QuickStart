@@ -104,3 +104,24 @@ use field name `file` and `application/octet-stream`.
 `subscribe` and `subscribeStream` validate timeout and tracking mode before
 starting a billable run. Polling emits only `WiroTaskSnapshotUpdate` values;
 socket event and binary update variants are introduced with Step 8.
+
+## Step 8 — WebSocket tracking
+
+| Area                  | React Native behavior                        | Reason                                 |
+| --------------------- | -------------------------------------------- | -------------------------------------- |
+| Production socket     | Standard Expo Go / React Native `WebSocket`  | No custom native module                |
+| Session seam          | Injectable `WiroSocketSessionFactory`        | Deterministic platform-neutral tests   |
+| Authentication        | Exact `task_info` token handshake            | Matches Swift and Kotlin wire contract |
+| Frame limits          | Configurable UTF-8 text and binary byte caps | Matches Kotlin hardening               |
+| Binary ownership      | Defensive `Uint8Array` copies                | Prevents external mutation             |
+| Tracking deadline     | Monotonic remaining budget                   | Prevents fallback timeout reset        |
+| Early socket close    | Detail fetch, then remaining-budget polling  | No repeated billable run               |
+| Terminal socket event | Canonical Detail snapshot emitted last       | Polling and socket terminal parity     |
+| Cancellation          | Native `AbortError`                          | React Native async convention          |
+| Cleanup               | Idempotent close on every termination path   | Prevents leaked sockets and listeners  |
+
+Swift fetches canonical task detail after a terminal socket event but does not
+emit that detail as a final update. React Native follows Kotlin hardening and
+emits `WiroTaskSnapshotUpdate` last. Socket timeouts and aborts never fall back;
+protocol errors and early closure may recover without starting another model
+run.

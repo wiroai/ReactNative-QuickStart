@@ -35,6 +35,7 @@ import {
   WiroTimeoutError,
   WiroUnknownApiError,
   WiroValidationError,
+  WiroWebSocketError,
 } from '../errors/wiro-error';
 import {
   ExpoWiroFileContentSource,
@@ -79,8 +80,13 @@ import { WiroModel } from '../models/model';
 import { WiroPaginatedResult } from '../models/pagination';
 import { WiroRunResult, WiroTaskResult } from '../models/run-result';
 import { WiroModelSchema } from '../models/schema';
+import {
+  decodeSocketFrame,
+  type WiroSocketEvent,
+} from '../models/socket-event';
 import { WiroTask } from '../models/task';
 import {
+  WiroTaskSnapshotUpdate,
   WiroTaskTrackingMode,
   type WiroTaskTrackingMode as WiroTaskTrackingModeType,
   WiroTaskUpdate,
@@ -96,6 +102,11 @@ import {
   type WiroHttpTransport,
 } from '../transport/http-transport';
 import { decodeResponseEnvelope } from '../transport/response-envelope';
+import {
+  ExpoWiroSocketSessionFactory,
+  type WiroSocketSession,
+  type WiroSocketSessionFactory,
+} from '../transport/socket-session';
 import { WIROKIT_VERSION } from '../wiro-kit-info';
 
 interface WiroClientCommonOptions {
@@ -107,6 +118,7 @@ interface WiroClientCommonOptions {
   readonly requestTimeoutMs?: number;
   readonly retryPolicy?: WiroRetryPolicy;
   readonly socketUrl?: string;
+  readonly socketSessionFactory?: WiroSocketSessionFactory;
   readonly transport?: WiroHttpTransport;
 }
 
@@ -203,6 +215,7 @@ interface ClientState {
   readonly logger: WiroLogger | undefined;
   readonly ownsTransport: boolean;
   readonly runtime: WiroRuntimeDependencies;
+  readonly socketSessionFactory: WiroSocketSessionFactory;
   readonly transport: WiroHttpTransport;
   closed: boolean;
 }
@@ -261,6 +274,8 @@ export class WiroClient {
         options.transport === undefined ||
         options.closeTransportOnClose === true,
       runtime: createRuntimeDependencies(internalOptions[RUNTIME_OVERRIDES]),
+      socketSessionFactory:
+        options.socketSessionFactory ?? new ExpoWiroSocketSessionFactory(),
       transport,
     });
     Object.freeze(this);
@@ -472,6 +487,16 @@ export class WiroClient {
     );
   }
 
+  watchTaskSocket(
+    token: WiroTaskToken,
+    options: WiroWatchTaskOptions = {},
+  ): AsyncIterable<WiroSocketEvent> {
+    const timeoutMs = trackingTimeout(options.timeoutMs);
+    return new SingleConsumerAsyncIterable(() =>
+      this.runSocketSession(token, timeoutMs, options.signal),
+    );
+  }
+
   async waitForTask(
     token: WiroTaskToken,
     options: WiroWatchTaskOptions = {},
@@ -517,14 +542,21 @@ export class WiroClient {
       invocation.parameters,
       invocation.options,
     );
-    for await (const task of this.pollTaskSnapshots(
-      token,
-      timeoutMs,
-      invocation.options.signal,
-    )) {
-      await invocation.options.onUpdate?.(WiroTaskUpdate.snapshot(task));
-      if (task.status.isTerminal) {
-        return WiroTaskResult.from(task);
+    const updates =
+      invocation.options.trackingMode === WiroTaskTrackingMode.webSocket
+        ? this.trackTaskWithSocketUpdates(
+            token,
+            timeoutMs,
+            invocation.options.signal,
+          )
+        : this.pollTaskUpdates(token, timeoutMs, invocation.options.signal);
+    for await (const update of updates) {
+      await invocation.options.onUpdate?.(update);
+      if (
+        update instanceof WiroTaskSnapshotUpdate &&
+        update.task.status.isTerminal
+      ) {
+        return WiroTaskResult.from(update.task);
       }
     }
     throw new WiroTimeoutError(trackingTimeoutMessage(timeoutMs), timeoutMs);
@@ -559,7 +591,13 @@ export class WiroClient {
       invocation.options,
     );
     return new ReusableAsyncIterable(() =>
-      this.pollTaskUpdates(token, timeoutMs, invocation.options.signal),
+      invocation.options.trackingMode === WiroTaskTrackingMode.webSocket
+        ? this.trackTaskWithSocketUpdates(
+            token,
+            timeoutMs,
+            invocation.options.signal,
+          )
+        : this.pollTaskUpdates(token, timeoutMs, invocation.options.signal),
     );
   }
 
@@ -654,6 +692,122 @@ export class WiroClient {
   ): AsyncGenerator<WiroTaskUpdateType, void, void> {
     for await (const task of this.pollTaskSnapshots(token, timeoutMs, signal)) {
       yield WiroTaskUpdate.snapshot(task);
+    }
+  }
+
+  private async *trackTaskWithSocketUpdates(
+    token: WiroTaskToken,
+    timeoutMs: number,
+    signal: AbortSignal | undefined,
+  ): AsyncGenerator<WiroTaskUpdateType, void, void> {
+    const state = getState(this);
+    const started = state.runtime.monotonicClock.milliseconds();
+    try {
+      for await (const event of this.runSocketSession(
+        token,
+        timeoutMs,
+        signal,
+      )) {
+        yield WiroTaskUpdate.fromSocketEvent(event);
+      }
+    } catch (error) {
+      if (isAbortError(error) || error instanceof WiroTimeoutError) {
+        throw error;
+      }
+      if (!(error instanceof WiroWebSocketError)) {
+        throw error;
+      }
+    }
+
+    throwIfAborted(signal);
+    const task = await this.getTask(token, signalOptions(signal));
+    if (task.status.isTerminal) {
+      yield WiroTaskUpdate.snapshot(task);
+      return;
+    }
+    const remainingMs = timeoutMs - trackingElapsed(state, started);
+    if (remainingMs <= 0) {
+      throw new WiroTimeoutError(trackingTimeoutMessage(timeoutMs), timeoutMs);
+    }
+    for await (const update of this.pollTaskUpdates(
+      token,
+      remainingMs,
+      signal,
+    )) {
+      yield update;
+    }
+  }
+
+  private async *runSocketSession(
+    token: WiroTaskToken,
+    timeoutMs: number,
+    signal: AbortSignal | undefined,
+  ): AsyncGenerator<WiroSocketEvent, void, void> {
+    const state = getState(this);
+    ensureOpen(state);
+    const scope = createTrackingScope(state, signal);
+    let session: WiroSocketSession | undefined;
+    try {
+      try {
+        session = await state.socketSessionFactory.connect(this.socketUrl, {
+          signal: scope.signal,
+          timeoutMs: this.requestTimeoutMs,
+        });
+      } catch (error) {
+        rethrowSocketControlError(error, scope.signal);
+        throw socketFailure(error);
+      }
+      try {
+        await session.sendText(taskInfoHandshakeJson(token));
+      } catch (error) {
+        rethrowSocketControlError(error, scope.signal);
+        if (error instanceof WiroWebSocketError) {
+          throw error;
+        }
+        throw new WiroWebSocketError(
+          'Failed to send a WebSocket frame.',
+          errorTypeName(error),
+        );
+      }
+
+      const started = state.runtime.monotonicClock.milliseconds();
+      while (trackingElapsed(state, started) < timeoutMs) {
+        throwIfAborted(scope.signal);
+        const remainingMs = timeoutMs - trackingElapsed(state, started);
+        const frame = await receiveSocketFrameBefore(
+          state,
+          session,
+          remainingMs,
+          timeoutMs,
+          scope.signal,
+        );
+        const event = decodeSocketFrame(frame, {
+          maxBinaryBytes: this.limits.maxWebSocketBinaryBytes,
+          maxTextBytes: this.limits.maxWebSocketTextBytes,
+        });
+        yield event;
+        if (event.isTerminal) {
+          return;
+        }
+      }
+      throw new WiroTimeoutError(socketTimeoutMessage(timeoutMs), timeoutMs);
+    } catch (error) {
+      rethrowSocketControlError(error, scope.signal);
+      if (
+        error instanceof WiroWebSocketError ||
+        error instanceof WiroTimeoutError
+      ) {
+        throw error;
+      }
+      throw socketFailure(error);
+    } finally {
+      try {
+        await session?.close();
+      } catch {
+        // Best-effort cleanup must not replace the tracking result.
+      } finally {
+        scope.dispose();
+      }
     }
   }
 
@@ -958,6 +1112,11 @@ export function percentEncodePathSegment(value: string): string {
     }
   }
   return encoded;
+}
+
+export function taskInfoHandshakeJson(token: WiroTaskToken): string {
+  const escaped = token.rawValue.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"');
+  return `{"type":"task_info","tasktoken":"${escaped}"}`;
 }
 
 function resolveAuth(options: WiroClientOptions): ClientAuth {
@@ -1312,6 +1471,55 @@ function trackingElapsed(state: ClientState, startedMs: number): number {
 
 function trackingTimeoutMessage(timeoutMs: number): string {
   return `Task did not finish within ${timeoutMs} ms.`;
+}
+
+function socketTimeoutMessage(timeoutMs: number): string {
+  return `Task socket did not finish within ${timeoutMs} ms.`;
+}
+
+async function receiveSocketFrameBefore(
+  state: ClientState,
+  session: WiroSocketSession,
+  remainingMs: number,
+  timeoutMs: number,
+  signal: AbortSignal,
+) {
+  if (remainingMs <= 0) {
+    throw new WiroTimeoutError(socketTimeoutMessage(timeoutMs), timeoutMs);
+  }
+  const timeoutController = new AbortController();
+  const receive = session.receiveFrame(signal);
+  const timeout = state.runtime.delay
+    .sleep(remainingMs, timeoutController.signal)
+    .then(() => {
+      throw new WiroTimeoutError(socketTimeoutMessage(timeoutMs), timeoutMs);
+    });
+  try {
+    return await Promise.race([receive, timeout]);
+  } finally {
+    timeoutController.abort(createAbortError());
+    void timeout.catch(() => undefined);
+  }
+}
+
+function rethrowSocketControlError(error: unknown, signal: AbortSignal): void {
+  if (signal.aborted) {
+    throw signal.reason ?? createAbortError();
+  }
+  if (isAbortError(error)) {
+    throw error;
+  }
+}
+
+function socketFailure(error: unknown): WiroWebSocketError {
+  return new WiroWebSocketError(
+    'The Wiro task WebSocket failed.',
+    errorTypeName(error),
+  );
+}
+
+function errorTypeName(error: unknown): string {
+  return error instanceof Error && error.name.length > 0 ? error.name : 'Error';
 }
 
 function containsFileInput(value: WiroJson): boolean {

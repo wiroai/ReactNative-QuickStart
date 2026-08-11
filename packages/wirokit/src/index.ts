@@ -1,4 +1,18 @@
 export {
+  decodeSocketFrame,
+  WiroSocketBinaryEvent,
+  WiroSocketEvent,
+  WiroSocketLogPayload,
+  WiroSocketMessage,
+  WiroSocketMessageEvent,
+  type WiroSocketMessageOptions,
+  WiroSocketOutputsPayload,
+  type WiroSocketPayload,
+  WiroSocketProgressPayload,
+  type WiroSocketFrameLimits,
+  WiroSocketUnknownPayload,
+} from './models/socket-event';
+export {
   WiroClient,
   type WiroApiKeyClientOptions,
   type WiroClientOptions,
@@ -139,6 +153,8 @@ export {
 export { WiroTaskStatus, type WiroTaskStatusKind } from './models/task-status';
 export {
   WiroTaskSnapshotUpdate,
+  WiroTaskBinaryUpdate,
+  WiroTaskEventUpdate,
   WiroTaskTrackingMode,
   WiroTaskUpdate,
   WiroTracking,
@@ -164,4 +180,11 @@ export {
   type WiroHttpResponseOptions,
   type WiroHttpTransport,
 } from './transport/http-transport';
+export {
+  ExpoWiroSocketSessionFactory,
+  type WiroSocketConnectOptions,
+  type WiroSocketFrame,
+  type WiroSocketSession,
+  type WiroSocketSessionFactory,
+} from './transport/socket-session';
 export { WIROKIT_VERSION, WiroKitInfo } from './wiro-kit-info';

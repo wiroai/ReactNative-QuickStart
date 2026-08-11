@@ -72,6 +72,7 @@ const result = await proxyClient.subscribe(
       console.log(update.status.apiValue);
     },
     timeoutMs: 120_000,
+    trackingMode: 'webSocket',
   },
 );
 console.log(result.kind);
@@ -155,9 +156,16 @@ clamp each polling sleep to the remaining timeout, and accept `AbortSignal`.
 before returning its reusable iterable. Creating another iterator from that
 same value only re-polls the captured token; it never repeats `/Run`.
 
-The default tracking timeout is 600 seconds. `trackingMode: 'webSocket'`
-temporarily uses polling in Step 7; native WebSocket tracking is introduced in
-Step 8.
+The default tracking timeout is 600 seconds. `trackingMode: 'webSocket'` uses
+the standard React Native WebSocket available in Expo Go. The socket sends the
+task-token handshake, enforces configurable text and binary frame limits, and
+always closes on success, failure, timeout, or abort. Early socket closure
+falls back to `/Task/Detail` and polling with only the remaining timeout.
+
+After a terminal socket event, the SDK fetches `/Task/Detail` and emits its
+canonical terminal snapshot last. This makes polling and WebSocket
+subscriptions finish with equivalent task data. `watchTaskSocket` exposes raw
+message and binary events when direct socket consumption is needed.
 
 ## React Native networking note
 

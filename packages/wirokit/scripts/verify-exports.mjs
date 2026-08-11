@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import {
   WIROKIT_VERSION as importedVersion,
   ExpoWiroFileContentSource,
+  ExpoWiroSocketSessionFactory,
   FetchWiroHttpTransport,
   Wiro,
   WiroClient,
@@ -13,6 +14,8 @@ import {
   WiroModelSort,
   WiroPaginatedResult,
   WiroTask,
+  WiroSocketEvent,
+  WiroSocketMessage,
   WiroTaskStatus,
   WiroTaskTrackingMode,
   WiroTaskUpdate,
@@ -46,6 +49,9 @@ assert.equal(typeof WiroTaskUpdate.snapshot, 'function');
 assert.equal(WiroTracking.defaultTimeoutMs, 600_000);
 assert.equal(typeof WiroUploadResult.parse, 'function');
 assert.equal(typeof ExpoWiroFileContentSource, 'function');
+assert.equal(typeof ExpoWiroSocketSessionFactory, 'function');
+assert.equal(typeof WiroSocketEvent.message, 'function');
+assert.equal(typeof WiroSocketMessage.parse, 'function');
 client.close();
 assert.equal(
   new requiredSdk.WiroModelId('owner', 'project').slug,
@@ -56,3 +62,4 @@ assert.equal(typeof requiredSdk.WiroModelSchema, 'function');
 assert.equal(typeof requiredSdk.WiroTask, 'function');
 assert.equal(requiredSdk.WiroTaskTrackingMode.webSocket, 'webSocket');
 assert.equal(typeof requiredSdk.WiroUploadResult, 'function');
+assert.equal(typeof requiredSdk.ExpoWiroSocketSessionFactory, 'function');

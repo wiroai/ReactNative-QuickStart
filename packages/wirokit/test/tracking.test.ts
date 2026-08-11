@@ -205,7 +205,9 @@ describe('subscribe', () => {
       },
       {
         onUpdate(update) {
-          updates.push(update);
+          if (update instanceof WiroTaskSnapshotUpdate) {
+            updates.push(update);
+          }
         },
       },
     );
@@ -278,7 +280,7 @@ describe('subscribe', () => {
     expect(transport.requests).toHaveLength(0);
   });
 
-  it('supports typed requests and the Step 7 WebSocket fallback', async () => {
+  it('supports typed polling requests', async () => {
     const transport = new FakeHttpTransport();
     transport.enqueueJson(200, runResponse());
     transport.enqueueJson(200, taskResponse('task_postprocess_end', 0));
@@ -287,7 +289,6 @@ describe('subscribe', () => {
       Wiro.model('owner/project', {
         prompt: WiroValue.string('hello'),
       }),
-      { trackingMode: 'webSocket' },
     );
 
     expect(result.kind).toBe('success');
