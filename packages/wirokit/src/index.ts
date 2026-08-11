@@ -2,14 +2,17 @@ export {
   WiroClient,
   type WiroApiKeyClientOptions,
   type WiroClientOptions,
+  type WiroDiscoveryRequestOptions,
   type WiroPostJsonOptions,
   type WiroProxyClientOptions,
+  type WiroSearchModelsOptions,
 } from './client/wiro-client';
 export { WiroAuthType, WiroClientDefaults } from './config/auth';
 export {
   WiroClientLimits,
   type WiroClientLimitsOptions,
 } from './config/client-limits';
+export { WiroModelSort, WiroSortOrder } from './config/discovery';
 export {
   WiroRetryPolicy,
   type WiroRetryPolicyOptions,
@@ -63,6 +66,42 @@ export {
   WiroLogLevel,
   type WiroLogger,
 } from './logging/wiro-logging';
+export {
+  WiroExploreCategory,
+  type WiroExploreCategoryOptions,
+} from './models/explore';
+export {
+  WiroModel,
+  type WiroModelOptions,
+  WiroModelTaskStats,
+  type WiroModelTaskStatsOptions,
+} from './models/model';
+export {
+  WiroApiError,
+  type WiroApiErrorOptions,
+  WiroPaginatedResult,
+  type WiroPaginatedResultOptions,
+} from './models/pagination';
+export {
+  WiroFileModelParameter,
+  WiroModelParameter,
+  WiroModelParameterGroup,
+  type WiroModelParameterGroupOptions,
+  WiroModelParameterInfo,
+  type WiroModelParameterInfoOptions,
+  WiroModelParameterOption,
+  type WiroModelParameterOptionOptions,
+  WiroModelSchema,
+  type WiroModelSchemaOptions,
+  WiroNumberModelParameter,
+  type WiroNumberModelParameterOptions,
+  WiroSelectModelParameter,
+  type WiroSelectModelParameterOptions,
+  WiroTextModelParameter,
+  type WiroTextModelParameterOptions,
+  WiroUnknownModelParameter,
+  type WiroUnknownModelParameterOptions,
+} from './models/schema';
 export {
   FetchWiroHttpTransport,
   type FetchWiroHttpTransportOptions,

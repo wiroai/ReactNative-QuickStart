@@ -1,0 +1,11 @@
+{
+  "start": "0",
+  "limit": "20",
+  "search": "flux",
+  "categories": ["image"],
+  "sort": "relevance",
+  "hideworkflows": true,
+  "summary": true,
+  "slugowner": "openai",
+  "order": "DESC"
+}

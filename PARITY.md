@@ -36,3 +36,18 @@ with the source SDKs.
 HMAC input, nonce regeneration, retry defaults, `Retry-After` delta-seconds,
 HTTP status mapping, and structured envelope extraction remain wire-compatible
 with Swift and Kotlin.
+
+## Step 4 — Discovery and schemas
+
+| Area                    | React Native behavior                                 | Reason                                      |
+| ----------------------- | ----------------------------------------------------- | ------------------------------------------- |
+| Pagination              | `start` and `limit` remain string-encoded on the wire | Matches Swift and Kotlin fixtures           |
+| Unknown fields          | Retained in immutable `raw` values                    | Forward compatibility and diagnostics       |
+| Unknown parameter kinds | Decode as `WiroUnknownModelParameter`                 | New server kinds do not crash older clients |
+| Schema validation       | Unknown input keys are allowed                        | Matches dynamic Wiro request behavior       |
+| Dates and URLs          | Defensive `Date` and `URL` copies                     | Prevents mutation of SDK state              |
+| JSON numbers            | Lossless raw lexemes remain available                 | Matches Kotlin precision hardening          |
+
+Discovery endpoint paths, fixed search flags, sort/order values, pagination
+boundaries, and schema validation messages remain aligned with both source
+SDKs.

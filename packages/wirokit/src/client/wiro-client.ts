@@ -3,8 +3,18 @@ import {
   WiroClientLimits,
   type WiroClientLimitsOptions,
 } from '../config/client-limits';
+import {
+  type WiroModelSort,
+  WiroModelSort as WiroModelSortValue,
+  type WiroSortOrder,
+} from '../config/discovery';
 import { WiroRetryPolicy } from '../config/retry-policy';
-import { type WiroJson, stringifyWiroJson } from '../core/wiro-value';
+import type { WiroModelId } from '../core/identifiers';
+import {
+  type WiroJson,
+  WiroValue,
+  stringifyWiroJson,
+} from '../core/wiro-value';
 import {
   WiroError,
   WiroNetworkError,
@@ -13,6 +23,10 @@ import {
   WiroUnknownApiError,
   WiroValidationError,
 } from '../errors/wiro-error';
+import {
+  readObjects,
+  type MalformedJsonHandler,
+} from '../internal/json-reader';
 import {
   type WiroRuntimeDependencies,
   type WiroRuntimeOverrides,
@@ -34,6 +48,10 @@ import {
   WiroLogEvent,
   WiroLogLevel,
 } from '../logging/wiro-logging';
+import { WiroExploreCategory } from '../models/explore';
+import { WiroModel } from '../models/model';
+import { WiroPaginatedResult } from '../models/pagination';
+import { WiroModelSchema } from '../models/schema';
 import {
   FetchWiroHttpTransport,
   WiroHttpRequest,
@@ -76,6 +94,20 @@ export type WiroClientOptions =
 export interface WiroPostJsonOptions {
   readonly retryable?: boolean;
   readonly signal?: AbortSignal;
+}
+
+export interface WiroDiscoveryRequestOptions {
+  readonly signal?: AbortSignal;
+}
+
+export interface WiroSearchModelsOptions extends WiroDiscoveryRequestOptions {
+  readonly categories?: readonly string[];
+  readonly limit?: number;
+  readonly order?: WiroSortOrder | null;
+  readonly owner?: string | null;
+  readonly search?: string;
+  readonly sort?: WiroModelSort;
+  readonly start?: number;
 }
 
 interface ApiKeyAuth {
@@ -166,6 +198,89 @@ export class WiroClient {
 
   get isClosed(): boolean {
     return getState(this).closed;
+  }
+
+  async searchModels(
+    options: WiroSearchModelsOptions = {},
+  ): Promise<WiroPaginatedResult<WiroModel>> {
+    const start = options.start ?? 0;
+    const limit = options.limit ?? 20;
+    if (!Number.isSafeInteger(start) || start < 0) {
+      throw new WiroValidationError('start cannot be negative.');
+    }
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+      throw new WiroValidationError('limit must be between 1 and 100.');
+    }
+
+    const body: Record<string, WiroValue> = {
+      categories: WiroValue.array(
+        (options.categories ?? []).map(WiroValue.string),
+      ),
+      hideworkflows: WiroValue.boolean(true),
+      limit: WiroValue.string(String(limit)),
+      search: WiroValue.string(options.search ?? ''),
+      sort: WiroValue.string(options.sort ?? WiroModelSortValue.relevance),
+      start: WiroValue.string(String(start)),
+      summary: WiroValue.boolean(true),
+    };
+    if (options.owner != null) {
+      body.slugowner = WiroValue.string(options.owner);
+    }
+    if (options.order != null) {
+      body.order = WiroValue.string(options.order);
+    }
+
+    const json = await this.postJson(
+      '/Tool/List',
+      body,
+      signalOptions(options.signal),
+    );
+    const onMalformedJson = malformedJsonHandler(getState(this));
+    return WiroPaginatedResult.parse(
+      json,
+      'tool',
+      (item) => WiroModel.parse(item, onMalformedJson),
+      onMalformedJson,
+    );
+  }
+
+  async explore(
+    options: WiroDiscoveryRequestOptions = {},
+  ): Promise<readonly WiroExploreCategory[]> {
+    const json = await this.postJson(
+      '/Tool/Explore',
+      {},
+      signalOptions(options.signal),
+    );
+    const onMalformedJson = malformedJsonHandler(getState(this));
+    return Object.freeze(
+      readObjects(json.explore, onMalformedJson).map((item) =>
+        WiroExploreCategory.parse(item, onMalformedJson),
+      ),
+    );
+  }
+
+  async getModelSchema(
+    modelId: WiroModelId,
+    options: WiroDiscoveryRequestOptions = {},
+  ): Promise<WiroModelSchema> {
+    const json = await this.postJson(
+      '/Tool/Detail',
+      {
+        slugowner: WiroValue.string(modelId.owner),
+        slugproject: WiroValue.string(modelId.project),
+      },
+      signalOptions(options.signal),
+    );
+    const onMalformedJson = malformedJsonHandler(getState(this));
+    const model = readObjects(json.tool, onMalformedJson)[0];
+    if (model === undefined) {
+      throw new WiroUnknownApiError(
+        'The model schema response did not contain a model.',
+        { statusCode: 200 },
+      );
+    }
+    return WiroModelSchema.parse(model, onMalformedJson);
   }
 
   async postJson(
@@ -534,6 +649,23 @@ function retryDelay(
   return error instanceof WiroNetworkError || error instanceof WiroTimeoutError
     ? policyDelay
     : undefined;
+}
+
+function signalOptions(signal: AbortSignal | undefined): WiroPostJsonOptions {
+  return signal === undefined ? {} : { signal };
+}
+
+function malformedJsonHandler(state: ClientState): MalformedJsonHandler {
+  return (raw) => {
+    logEvent(
+      state,
+      new WiroLogEvent({
+        level: WiroLogLevel.debug,
+        message:
+          'Ignored malformed nested JSON string ' + `(length ${raw.length}).`,
+      }),
+    );
+  };
 }
 
 async function waitBeforeRetry(

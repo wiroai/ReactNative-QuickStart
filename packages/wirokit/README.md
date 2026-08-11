@@ -16,6 +16,7 @@ import {
   WiroClient,
   WiroKitInfo,
   WiroModelId,
+  WiroModelSort,
   WiroValue,
 } from '@wiro-ai/wirokit-react-native';
 
@@ -40,6 +41,15 @@ const proxyClient = new WiroClient({
   headers: { Authorization: 'Bearer short-lived-token' },
 });
 
+const models = await proxyClient.searchModels({
+  search: 'image',
+  sort: WiroModelSort.relevance,
+});
+const schema = await proxyClient.getModelSchema(
+  new WiroModelId('owner', 'project'),
+);
+console.log(models.total, schema.parameters);
+
 client.close();
 proxyClient.close();
 ```
@@ -47,8 +57,9 @@ proxyClient.close();
 Core identifiers, lossless JSON values, Expo-compatible file inputs, retry
 configuration, limits, logging, typed errors, and the injectable `fetch`
 transport are available. Authenticated requests support API-key, signature,
-and proxy modes. Production mobile apps should prefer proxy mode instead of
-embedding long-lived API secrets.
+and proxy modes. Model search, explore, schema decoding, forward-compatible
+parameter kinds, and schema validation are included. Production mobile apps
+should prefer proxy mode instead of embedding long-lived API secrets.
 
 This package does not use custom native modules and does not depend on React UI
 or Expo UI packages. HMAC-SHA256 uses the audited, zero-dependency

@@ -7,6 +7,9 @@ import {
   WiroClient,
   WiroKitInfo as importedInfo,
   WiroModelId,
+  WiroModelSchema,
+  WiroModelSort,
+  WiroPaginatedResult,
   WiroValidationError,
   WiroValue,
 } from '@wiro-ai/wirokit-react-native';
@@ -24,9 +27,13 @@ assert.ok(new WiroValidationError('Invalid.') instanceof Error);
 const client = new WiroClient({ apiKey: 'test-api-key' });
 assert.equal(client.authType, 'apiKey');
 assert.equal(typeof FetchWiroHttpTransport, 'function');
+assert.equal(WiroModelSort.ratedUserCount, 'ratedusercount');
+assert.equal(typeof WiroModelSchema.parse, 'function');
+assert.equal(typeof WiroPaginatedResult.parse, 'function');
 client.close();
 assert.equal(
   new requiredSdk.WiroModelId('owner', 'project').slug,
   'owner/project',
 );
 assert.equal(typeof requiredSdk.WiroClient, 'function');
+assert.equal(typeof requiredSdk.WiroModelSchema, 'function');

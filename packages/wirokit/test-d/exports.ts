@@ -4,7 +4,11 @@ import {
   WiroFileInput,
   type WiroFileInput as WiroFileInputType,
   WiroKitInfo,
+  type WiroModel,
   WiroModelId,
+  type WiroModelSchema,
+  WiroModelSort,
+  type WiroPaginatedResult,
   WiroHttpResponse,
   type WiroHttpTransport,
   WiroValidationError,
@@ -31,6 +35,10 @@ const client = new WiroClient({
   apiKey: 'test-api-key',
   transport,
 });
+const models: Promise<WiroPaginatedResult<WiroModel>> = client.searchModels({
+  sort: WiroModelSort.relevance,
+});
+const schema: Promise<WiroModelSchema> = client.getModelSchema(modelId);
 
 void version;
 void infoVersion;
@@ -38,3 +46,5 @@ void modelId;
 void value;
 void error;
 void client;
+void models;
+void schema;
