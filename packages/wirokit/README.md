@@ -13,6 +13,7 @@ pnpm add @wiro-ai/wirokit-react-native
 ```ts
 import {
   stringifyWiroJson,
+  Wiro,
   WiroClient,
   WiroKitInfo,
   WiroModelId,
@@ -50,6 +51,17 @@ const schema = await proxyClient.getModelSchema(
 );
 console.log(models.total, schema.parameters);
 
+const run = await proxyClient.run(
+  Wiro.model('owner/project', {
+    prompt: WiroValue.string('A mountain lake'),
+  }),
+  { callbackUrl: 'https://example.com/wiro/callback' },
+);
+if (run.taskToken !== undefined) {
+  const task = await proxyClient.getTask(run.taskToken);
+  console.log(task.status.apiValue, task.isSuccessful);
+}
+
 client.close();
 proxyClient.close();
 ```
@@ -59,7 +71,9 @@ configuration, limits, logging, typed errors, and the injectable `fetch`
 transport are available. Authenticated requests support API-key, signature,
 and proxy modes. Model search, explore, schema decoding, forward-compatible
 parameter kinds, and schema validation are included. Production mobile apps
-should prefer proxy mode instead of embedding long-lived API secrets.
+should prefer proxy mode instead of embedding long-lived API secrets. Dynamic
+model runs and task detail, cancel, and kill operations use typed identifiers
+and preserve unknown task statuses for forward compatibility.
 
 This package does not use custom native modules and does not depend on React UI
 or Expo UI packages. HMAC-SHA256 uses the audited, zero-dependency

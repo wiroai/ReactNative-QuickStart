@@ -9,7 +9,11 @@ import {
   type WiroSortOrder,
 } from '../config/discovery';
 import { WiroRetryPolicy } from '../config/retry-policy';
-import type { WiroModelId } from '../core/identifiers';
+import {
+  type WiroModelId,
+  type WiroTaskId,
+  WiroTaskToken,
+} from '../core/identifiers';
 import {
   type WiroJson,
   WiroValue,
@@ -24,8 +28,9 @@ import {
   WiroValidationError,
 } from '../errors/wiro-error';
 import {
-  readObjects,
   type MalformedJsonHandler,
+  readBoolean,
+  readObjects,
 } from '../internal/json-reader';
 import {
   type WiroRuntimeDependencies,
@@ -36,10 +41,11 @@ import {
 } from '../internal/runtime';
 import { redactSensitiveText } from '../internal/redaction';
 import { createWiroSignature } from '../internal/signature';
-import { utf8ByteLength } from '../internal/utf8';
+import { encodeUtf8, utf8ByteLength } from '../internal/utf8';
 import {
   requirePositiveDuration,
   validateBaseUrl,
+  validateCallbackUrl,
   validateHeader,
   validateWebSocketUrl,
 } from '../internal/validation';
@@ -51,7 +57,10 @@ import {
 import { WiroExploreCategory } from '../models/explore';
 import { WiroModel } from '../models/model';
 import { WiroPaginatedResult } from '../models/pagination';
+import { WiroRunResult } from '../models/run-result';
 import { WiroModelSchema } from '../models/schema';
+import { WiroTask } from '../models/task';
+import type { WiroModelRequest } from '../requests/model-request';
 import {
   FetchWiroHttpTransport,
   WiroHttpRequest,
@@ -108,6 +117,10 @@ export interface WiroSearchModelsOptions extends WiroDiscoveryRequestOptions {
   readonly search?: string;
   readonly sort?: WiroModelSort;
   readonly start?: number;
+}
+
+export interface WiroRunModelOptions extends WiroDiscoveryRequestOptions {
+  readonly callbackUrl?: string | null;
 }
 
 interface ApiKeyAuth {
@@ -283,6 +296,104 @@ export class WiroClient {
     return WiroModelSchema.parse(model, onMalformedJson);
   }
 
+  async runModel(
+    modelId: WiroModelId,
+    parameters: WiroJson = {},
+    options: WiroRunModelOptions = {},
+  ): Promise<WiroRunResult> {
+    const body: Record<string, WiroValue> = {
+      ...parameters,
+    };
+    if (options.callbackUrl != null) {
+      body.callbackUrl = WiroValue.string(
+        validateCallbackUrl(options.callbackUrl),
+      );
+    }
+    const owner = percentEncodePathSegment(modelId.owner);
+    const project = percentEncodePathSegment(modelId.project);
+    const json = await this.postJson(`/Run/${owner}/${project}`, body, {
+      ...signalOptions(options.signal),
+      retryable: false,
+    });
+    return WiroRunResult.parse(json, malformedJsonHandler(getState(this)));
+  }
+
+  async run(
+    request: WiroModelRequest,
+    options: WiroRunModelOptions = {},
+  ): Promise<WiroRunResult> {
+    return this.runModel(request.model, request.parameters(), options);
+  }
+
+  async getTask(
+    token: WiroTaskToken,
+    options: WiroDiscoveryRequestOptions = {},
+  ): Promise<WiroTask> {
+    const json = await this.postJson(
+      '/Task/Detail',
+      {
+        tasktoken: WiroValue.string(token.rawValue),
+      },
+      signalOptions(options.signal),
+    );
+    return taskFromResponse(json, malformedJsonHandler(getState(this)));
+  }
+
+  async getTaskById(
+    id: WiroTaskId,
+    options: WiroDiscoveryRequestOptions = {},
+  ): Promise<WiroTask> {
+    const json = await this.postJson(
+      '/Task/Detail',
+      {
+        taskid: WiroValue.string(id.rawValue),
+      },
+      signalOptions(options.signal),
+    );
+    return taskFromResponse(json, malformedJsonHandler(getState(this)));
+  }
+
+  async cancelTask(
+    id: WiroTaskId,
+    options: WiroDiscoveryRequestOptions = {},
+  ): Promise<boolean> {
+    const json = await this.postJson(
+      '/Task/Cancel',
+      {
+        taskid: WiroValue.string(id.rawValue),
+      },
+      signalOptions(options.signal),
+    );
+    return readBoolean(json.result) ?? false;
+  }
+
+  killTask(
+    identifier: WiroTaskToken,
+    options?: WiroDiscoveryRequestOptions,
+  ): Promise<boolean>;
+
+  killTask(
+    identifier: WiroTaskId,
+    options?: WiroDiscoveryRequestOptions,
+  ): Promise<boolean>;
+
+  async killTask(
+    identifier: WiroTaskToken | WiroTaskId,
+    options: WiroDiscoveryRequestOptions = {},
+  ): Promise<boolean> {
+    const isToken = identifier instanceof WiroTaskToken;
+    const json = await this.postJson(
+      '/Task/Kill',
+      {
+        [isToken ? 'socketaccesstoken' : 'taskid']: WiroValue.string(
+          identifier.rawValue,
+        ),
+      },
+      signalOptions(options.signal),
+    );
+    return readBoolean(json.result) ?? false;
+  }
+
   async postJson(
     path: string,
     body: WiroJson = {},
@@ -438,6 +549,26 @@ export function makeWiroUserAgent(): string {
 export function isRetryablePath(path: string): boolean {
   const normalized = path.startsWith('/') ? path : `/${path}`;
   return normalized !== '/File/Upload' && !normalized.startsWith('/Run/');
+}
+
+export function percentEncodePathSegment(value: string): string {
+  let encoded = '';
+  for (const byte of encodeUtf8(value)) {
+    if (
+      (byte >= 0x41 && byte <= 0x5a) ||
+      (byte >= 0x61 && byte <= 0x7a) ||
+      (byte >= 0x30 && byte <= 0x39) ||
+      byte === 0x2d ||
+      byte === 0x2e ||
+      byte === 0x5f ||
+      byte === 0x7e
+    ) {
+      encoded += String.fromCharCode(byte);
+    } else {
+      encoded += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+    }
+  }
+  return encoded;
 }
 
 function resolveAuth(options: WiroClientOptions): ClientAuth {
@@ -666,6 +797,19 @@ function malformedJsonHandler(state: ClientState): MalformedJsonHandler {
       }),
     );
   };
+}
+
+function taskFromResponse(
+  json: WiroJson,
+  onMalformedJson: MalformedJsonHandler,
+): WiroTask {
+  const task = readObjects(json.tasklist, onMalformedJson)[0];
+  if (task === undefined) {
+    throw new WiroUnknownApiError('The task response did not contain a task.', {
+      statusCode: 200,
+    });
+  }
+  return WiroTask.parse(task, onMalformedJson);
 }
 
 async function waitBeforeRetry(

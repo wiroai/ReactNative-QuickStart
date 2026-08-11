@@ -175,6 +175,9 @@ describe('safe validators', () => {
     expect(validateCallbackUrl('https://app.example.com/callback?task=1')).toBe(
       'https://app.example.com/callback?task=1',
     );
+    expect(validateCallbackUrl('https://app.example.com?task=1')).toBe(
+      'https://app.example.com?task=1',
+    );
     expect(validateBaseUrl('https://example.com')).toBe('https://example.com');
   });
 

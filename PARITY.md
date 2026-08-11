@@ -51,3 +51,18 @@ with Swift and Kotlin.
 Discovery endpoint paths, fixed search flags, sort/order values, pagination
 boundaries, and schema validation messages remain aligned with both source
 SDKs.
+
+## Step 5 — Run and task management
+
+| Area                 | React Native behavior                              | Reason                           |
+| -------------------- | -------------------------------------------------- | -------------------------------- |
+| Billable run retries | `/Run/*` is never retried                          | Prevents duplicate billable work |
+| Path segments        | RFC 3986 UTF-8 percent encoding                    | Prevents path injection          |
+| Callback URL         | HTTP(S), query allowed, no credentials or fragment | Matches Kotlin hardening         |
+| Cancellation         | Native `AbortError` is preserved                   | Cancellation is not hidden       |
+| Task statuses        | Unknown raw values remain inspectable              | Forward compatibility            |
+| Terminal states      | Only completed and cancelled                       | Matches Swift and Kotlin         |
+| Success              | Completed status and exit code zero                | Avoids false success results     |
+
+Run, task detail, cancel, and kill request bodies remain wire-compatible with
+the shared golden fixtures.

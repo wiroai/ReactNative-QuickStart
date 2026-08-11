@@ -5,6 +5,7 @@ export {
   type WiroDiscoveryRequestOptions,
   type WiroPostJsonOptions,
   type WiroProxyClientOptions,
+  type WiroRunModelOptions,
   type WiroSearchModelsOptions,
 } from './client/wiro-client';
 export { WiroAuthType, WiroClientDefaults } from './config/auth';
@@ -83,6 +84,14 @@ export {
   type WiroPaginatedResultOptions,
 } from './models/pagination';
 export {
+  WiroRunResult,
+  type WiroRunResultOptions,
+  WiroTaskFailure,
+  WiroTaskFailureReason,
+  WiroTaskResult,
+  WiroTaskSuccess,
+} from './models/run-result';
+export {
   WiroFileModelParameter,
   WiroModelParameter,
   WiroModelParameterGroup,
@@ -102,6 +111,23 @@ export {
   WiroUnknownModelParameter,
   type WiroUnknownModelParameterOptions,
 } from './models/schema';
+export { WiroTask, type WiroTaskOptions } from './models/task';
+export {
+  WiroTaskOutput,
+  WiroTaskOutputContent,
+  type WiroTaskOutputContentOptions,
+  type WiroTaskOutputOptions,
+} from './models/task-output';
+export {
+  WiroTaskProgress,
+  type WiroTaskProgressOptions,
+} from './models/task-progress';
+export { WiroTaskStatus, type WiroTaskStatusKind } from './models/task-status';
+export {
+  Wiro,
+  WiroDynamicRequest,
+  type WiroModelRequest,
+} from './requests/model-request';
 export {
   FetchWiroHttpTransport,
   type FetchWiroHttpTransportOptions,

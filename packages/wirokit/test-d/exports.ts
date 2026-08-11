@@ -1,5 +1,6 @@
 import {
   WIROKIT_VERSION,
+  Wiro,
   WiroClient,
   WiroFileInput,
   type WiroFileInput as WiroFileInputType,
@@ -9,6 +10,10 @@ import {
   type WiroModelSchema,
   WiroModelSort,
   type WiroPaginatedResult,
+  type WiroRunResult,
+  type WiroTask,
+  WiroTaskId,
+  WiroTaskStatus,
   WiroHttpResponse,
   type WiroHttpTransport,
   WiroValidationError,
@@ -39,6 +44,12 @@ const models: Promise<WiroPaginatedResult<WiroModel>> = client.searchModels({
   sort: WiroModelSort.relevance,
 });
 const schema: Promise<WiroModelSchema> = client.getModelSchema(modelId);
+const request = Wiro.model('owner/project', {
+  prompt: WiroValue.string('hello'),
+});
+const run: Promise<WiroRunResult> = client.run(request);
+const task: Promise<WiroTask> = client.getTaskById(new WiroTaskId('task-id'));
+const terminal: boolean = WiroTaskStatus.completed.isTerminal;
 
 void version;
 void infoVersion;
@@ -48,3 +59,7 @@ void error;
 void client;
 void models;
 void schema;
+void request;
+void run;
+void task;
+void terminal;

@@ -73,10 +73,30 @@ export function validateWebSocketUrl(value: string): string {
 }
 
 export function validateCallbackUrl(value: string): string {
-  return validateUrl(value, 'http', {
-    allowQuery: true,
-    label: 'callback URL',
-  });
+  try {
+    if (!/^https?:\/\//iu.test(value)) {
+      throw new WiroValidationError('callback URL is not absolute.');
+    }
+    validateUrl(value, 'http', {
+      allowQuery: true,
+      label: 'callback URL',
+    });
+    const parsed = new URL(value);
+    const normalized = parsed.toString();
+    const authorityEnd = value.slice(value.indexOf('://') + 3).search(/[/?#]/u);
+    const firstDelimiter =
+      authorityEnd < 0
+        ? undefined
+        : value[value.indexOf('://') + 3 + authorityEnd];
+    return firstDelimiter === '/'
+      ? normalized
+      : normalized.replace(`${parsed.origin}/`, parsed.origin);
+  } catch {
+    throw new WiroValidationError(
+      'callbackURL must be an HTTP(S) URL without ' +
+        'credentials or a fragment.',
+    );
+  }
 }
 
 export function validateRemoteFileUrl(value: string): string {
