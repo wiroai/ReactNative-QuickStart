@@ -24,6 +24,7 @@ import {
   WiroArrayValue,
   WiroFileInputValue,
   type WiroJson,
+  MAX_WIRO_JSON_DEPTH,
   WiroObjectValue,
   WiroValue,
   stringifyWiroJson,
@@ -750,6 +751,11 @@ export class WiroClient {
     try {
       try {
         session = await state.socketSessionFactory.connect(this.socketUrl, {
+          maxBinaryBytes: this.limits.maxWebSocketBinaryBytes,
+          maxQueuedBytes:
+            this.limits.maxWebSocketTextBytes +
+            this.limits.maxWebSocketBinaryBytes,
+          maxTextBytes: this.limits.maxWebSocketTextBytes,
           signal: scope.signal,
           timeoutMs: this.requestTimeoutMs,
         });
@@ -890,9 +896,7 @@ export class WiroClient {
         this.requestTimeoutMs,
       );
     } catch (error) {
-      if (isAbortError(error)) {
-        throw error;
-      }
+      rethrowIfRequestAborted(signal, error);
       const mapped = mapTransportError(error);
       logFailure(state, mapped, url, 0);
       throw mapped;
@@ -927,9 +931,7 @@ export class WiroClient {
         redactSensitiveText(message, sensitiveValues),
       );
     } catch (error) {
-      if (isAbortError(error)) {
-        throw error;
-      }
+      rethrowIfRequestAborted(signal, error);
       if (error instanceof WiroError) {
         logFailure(state, error, url, 0);
       }
@@ -985,9 +987,7 @@ export class WiroClient {
           this.requestTimeoutMs,
         );
       } catch (error) {
-        if (isAbortError(error)) {
-          throw error;
-        }
+        rethrowIfRequestAborted(options.signal, error);
         const mapped = mapTransportError(error);
         const delayMs = retryDelay(
           mapped,
@@ -1035,9 +1035,7 @@ export class WiroClient {
           redactSensitiveText(message, sensitiveValues),
         );
       } catch (error) {
-        if (isAbortError(error)) {
-          throw error;
-        }
+        rethrowIfRequestAborted(options.signal, error);
         if (!(error instanceof WiroError)) {
           throw error;
         }
@@ -1195,6 +1193,7 @@ function isSdkOwnedHeader(name: string): boolean {
 }
 
 function makeRequestUrl(baseUrl: string, path: string): string {
+  validatePublicRequestPath(path);
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const candidate = baseUrl + normalizedPath;
   try {
@@ -1207,11 +1206,51 @@ function makeRequestUrl(baseUrl: string, path: string): string {
   }
 }
 
+function validatePublicRequestPath(path: string): void {
+  if (
+    path.includes('?') ||
+    path.includes('#') ||
+    /[\r\n\u0000\\]/u.test(path)
+  ) {
+    throw new WiroValidationError(
+      `Could not build request URL for path ${path}.`,
+    );
+  }
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  for (const segment of normalizedPath.split('/')) {
+    if (segment.length === 0) {
+      continue;
+    }
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      throw new WiroValidationError(
+        `Could not build request URL for path ${path}.`,
+      );
+    }
+    if (
+      segment === '.' ||
+      segment === '..' ||
+      decoded === '.' ||
+      decoded === '..' ||
+      /[\r\n\u0000\\]/u.test(decoded)
+    ) {
+      throw new WiroValidationError(
+        `Could not build request URL for path ${path}.`,
+      );
+    }
+  }
+}
+
 function encodeRequestBody(body: WiroJson, maximumBytes: number): string {
   let encoded: string;
   try {
     encoded = stringifyWiroJson(body);
-  } catch {
+  } catch (error) {
+    if (error instanceof WiroValidationError) {
+      throw error;
+    }
     throw new WiroValidationError('Could not encode request body as JSON.');
   }
   if (utf8ByteLength(encoded) > maximumBytes) {
@@ -1485,13 +1524,15 @@ async function receiveSocketFrameBefore(
   signal: AbortSignal,
 ) {
   if (remainingMs <= 0) {
+    await session.close();
     throw new WiroTimeoutError(socketTimeoutMessage(timeoutMs), timeoutMs);
   }
   const timeoutController = new AbortController();
   const receive = session.receiveFrame(signal);
   const timeout = state.runtime.delay
     .sleep(remainingMs, timeoutController.signal)
-    .then(() => {
+    .then(async () => {
+      await session.close();
       throw new WiroTimeoutError(socketTimeoutMessage(timeoutMs), timeoutMs);
     });
   try {
@@ -1543,21 +1584,32 @@ async function resolveFileValue(
   client: WiroClient,
   value: WiroValue,
   options: WiroUploadOptions,
+  depth = 0,
 ): Promise<WiroValue> {
+  if (depth > MAX_WIRO_JSON_DEPTH) {
+    throw new WiroValidationError(
+      'JSON value exceeds the maximum nesting depth.',
+    );
+  }
   if (value instanceof WiroFileInputValue) {
     return resolveFileInput(client, value.value, options);
   }
   if (value instanceof WiroObjectValue) {
     const resolved: Record<string, WiroValue> = {};
     for (const [key, nested] of Object.entries(value.value)) {
-      resolved[key] = await resolveFileValue(client, nested, options);
+      resolved[key] = await resolveFileValue(
+        client,
+        nested,
+        options,
+        depth + 1,
+      );
     }
     return WiroValue.object(resolved);
   }
   if (value instanceof WiroArrayValue) {
     const resolved: WiroValue[] = [];
     for (const nested of value.value) {
-      resolved.push(await resolveFileValue(client, nested, options));
+      resolved.push(await resolveFileValue(client, nested, options, depth + 1));
     }
     return WiroValue.array(resolved);
   }
@@ -1732,6 +1784,18 @@ function ensureOpen(state: ClientState): void {
 function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted === true) {
     throw signal.reason ?? createAbortError();
+  }
+}
+
+function rethrowIfRequestAborted(
+  signal: AbortSignal | undefined,
+  error: unknown,
+): void {
+  if (signal?.aborted === true) {
+    throw signal.reason ?? createAbortError();
+  }
+  if (isAbortError(error)) {
+    throw error;
   }
 }
 

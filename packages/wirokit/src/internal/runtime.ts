@@ -85,12 +85,7 @@ export function createRuntimeDependencies(
 ): WiroRuntimeDependencies {
   const clock = overrides.clock ?? wallClock;
   const nonceProvider =
-    overrides.nonceProvider ??
-    Object.freeze({
-      nextNonce(): string {
-        return Math.trunc(clock.epochMilliseconds()).toString();
-      },
-    });
+    overrides.nonceProvider ?? createMonotonicNonceProvider(clock);
 
   return Object.freeze({
     clock,
@@ -98,6 +93,21 @@ export function createRuntimeDependencies(
     jitterProvider: overrides.jitterProvider ?? jitterProvider,
     monotonicClock: overrides.monotonicClock ?? monotonicClock,
     nonceProvider,
+  });
+}
+
+/**
+ * Process-wide numeric nonce that stays unique under same-millisecond
+ * parallel signature requests and never moves backwards with the wall clock.
+ */
+function createMonotonicNonceProvider(clock: WiroClock): WiroNonceProvider {
+  let nextNonce = 0;
+  return Object.freeze({
+    nextNonce(): string {
+      const wall = Math.trunc(clock.epochMilliseconds());
+      nextNonce = Math.max(nextNonce + 1, wall);
+      return nextNonce.toString();
+    },
   });
 }
 

@@ -1,5 +1,6 @@
 import { WiroValidationError, WiroWebSocketError } from '../errors/wiro-error';
 import { createAbortError } from '../internal/runtime';
+import { utf8ByteLength } from '../internal/utf8';
 import { requirePositiveDuration } from '../internal/validation';
 
 export type WiroSocketFrame =
@@ -19,6 +20,9 @@ export interface WiroSocketSession {
 }
 
 export interface WiroSocketConnectOptions {
+  readonly maxBinaryBytes?: number;
+  readonly maxQueuedBytes?: number;
+  readonly maxTextBytes?: number;
   readonly signal?: AbortSignal;
   readonly timeoutMs: number;
 }
@@ -36,6 +40,15 @@ interface FrameWaiter {
   readonly signal: AbortSignal | undefined;
   readonly abort: () => void;
 }
+
+interface SocketFrameLimits {
+  readonly maxBinaryBytes: number;
+  readonly maxQueuedBytes: number;
+  readonly maxTextBytes: number;
+}
+
+const DEFAULT_MAX_TEXT_BYTES = 8 * 1024 * 1024;
+const DEFAULT_MAX_BINARY_BYTES = 8 * 1024 * 1024;
 
 export class ExpoWiroSocketSessionFactory implements WiroSocketSessionFactory {
   async connect(
@@ -57,7 +70,10 @@ export class ExpoWiroSocketSessionFactory implements WiroSocketSessionFactory {
     } catch (error) {
       throw socketFailure(error);
     }
-    const session = new ExpoWiroSocketSession(socket);
+    const session = new ExpoWiroSocketSession(
+      socket,
+      resolveFrameLimits(options),
+    );
     try {
       await session.waitUntilOpen(options);
       return session;
@@ -70,16 +86,19 @@ export class ExpoWiroSocketSessionFactory implements WiroSocketSessionFactory {
 
 class ExpoWiroSocketSession implements WiroSocketSession {
   readonly #frames: WiroSocketFrame[] = [];
+  readonly #limits: SocketFrameLimits;
   readonly #openPromise: Promise<void>;
   readonly #socket: WebSocket;
   readonly #waiters: FrameWaiter[] = [];
   #closed = false;
   #openReject: ((error: unknown) => void) | undefined;
   #openResolve: (() => void) | undefined;
+  #queuedBytes = 0;
   #terminalError: unknown;
 
-  constructor(socket: WebSocket) {
+  constructor(socket: WebSocket, limits: SocketFrameLimits) {
     this.#socket = socket;
+    this.#limits = limits;
     this.#openPromise = new Promise<void>((resolve, reject) => {
       this.#openResolve = resolve;
       this.#openReject = reject;
@@ -173,6 +192,7 @@ class ExpoWiroSocketSession implements WiroSocketSession {
     }
     const frame = this.#frames.shift();
     if (frame !== undefined) {
+      this.#queuedBytes -= frameByteLength(frame);
       return Promise.resolve(frame);
     }
     if (this.#terminalError !== undefined) {
@@ -219,6 +239,15 @@ class ExpoWiroSocketSession implements WiroSocketSession {
 
   private enqueueMessage(data: unknown): void {
     if (typeof data === 'string') {
+      if (utf8ByteLength(data) > this.#limits.maxTextBytes) {
+        this.fail(
+          new WiroWebSocketError(
+            'The Wiro task WebSocket returned a text frame ' +
+              'that exceeds the size limit.',
+          ),
+        );
+        return;
+      }
       this.enqueueFrame({
         kind: 'text',
         text: data,
@@ -226,17 +255,13 @@ class ExpoWiroSocketSession implements WiroSocketSession {
       return;
     }
     if (data instanceof ArrayBuffer) {
-      this.enqueueFrame({
-        bytes: new Uint8Array(data),
-        kind: 'binary',
-      });
+      this.enqueueBinary(new Uint8Array(data));
       return;
     }
     if (ArrayBuffer.isView(data)) {
-      this.enqueueFrame({
-        bytes: new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-        kind: 'binary',
-      });
+      this.enqueueBinary(
+        new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+      );
       return;
     }
     this.fail(
@@ -246,9 +271,35 @@ class ExpoWiroSocketSession implements WiroSocketSession {
     );
   }
 
+  private enqueueBinary(bytes: Uint8Array): void {
+    if (bytes.byteLength > this.#limits.maxBinaryBytes) {
+      this.fail(
+        new WiroWebSocketError(
+          'The Wiro task WebSocket returned a binary frame ' +
+            'that exceeds the size limit.',
+        ),
+      );
+      return;
+    }
+    this.enqueueFrame({
+      bytes: new Uint8Array(bytes),
+      kind: 'binary',
+    });
+  }
+
   private enqueueFrame(frame: WiroSocketFrame): void {
     const waiter = this.#waiters.shift();
     if (waiter === undefined) {
+      const size = frameByteLength(frame);
+      if (this.#queuedBytes + size > this.#limits.maxQueuedBytes) {
+        this.fail(
+          new WiroWebSocketError(
+            'The Wiro task WebSocket exceeded the queued frame budget.',
+          ),
+        );
+        return;
+      }
+      this.#queuedBytes += size;
       this.#frames.push(frame);
       return;
     }
@@ -268,6 +319,24 @@ class ExpoWiroSocketSession implements WiroSocketSession {
       waiter.reject(this.#terminalError);
     }
   }
+}
+
+function resolveFrameLimits(
+  options: WiroSocketConnectOptions,
+): SocketFrameLimits {
+  const maxTextBytes = options.maxTextBytes ?? DEFAULT_MAX_TEXT_BYTES;
+  const maxBinaryBytes = options.maxBinaryBytes ?? DEFAULT_MAX_BINARY_BYTES;
+  return {
+    maxBinaryBytes,
+    maxQueuedBytes: options.maxQueuedBytes ?? maxTextBytes + maxBinaryBytes,
+    maxTextBytes,
+  };
+}
+
+function frameByteLength(frame: WiroSocketFrame): number {
+  return frame.kind === 'binary'
+    ? frame.bytes.byteLength
+    : utf8ByteLength(frame.text);
 }
 
 function socketFailure(error: unknown): WiroWebSocketError {

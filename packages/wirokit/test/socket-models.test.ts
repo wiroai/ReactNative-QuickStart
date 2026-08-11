@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  decodeSocketFrame,
   WiroSocketBinaryEvent,
   WiroSocketLogPayload,
   WiroSocketMessageEvent,
@@ -13,6 +12,7 @@ import {
   WiroTaskUpdate,
   WiroWebSocketError,
 } from '../src';
+import { decodeSocketFrame } from '../src/models/socket-event';
 
 const limits = {
   maxBinaryBytes: 1_024,

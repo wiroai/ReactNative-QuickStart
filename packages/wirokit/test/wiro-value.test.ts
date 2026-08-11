@@ -51,8 +51,10 @@ describe('WiroValue JSON fidelity', () => {
   });
 
   it('provides finite and exact numeric accessors', () => {
-    expect(WiroValue.numberLexeme('3.0').intValue).toBe(3);
+    expect(WiroValue.numberLexeme('3.0').intValue).toBeNull();
+    expect(WiroValue.numberLexeme('3').intValue).toBe(3);
     expect(WiroValue.numberLexeme('3.5').intValue).toBeNull();
+    expect(WiroValue.numberLexeme('7.0e1').intValue).toBe(70);
     expect(WiroValue.string(' 42 ').intValue).toBe(42);
     expect(WiroValue.string('9007199254740992').intValue).toBeNull();
     expect(WiroValue.numberLexeme('1e400').doubleValue).toBeNull();

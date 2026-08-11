@@ -83,7 +83,8 @@ describe('task identifiers', () => {
     expect(token.rawValue).toBe('secret-task-token');
     expect(token.toString()).toBe('WiroTaskToken([REDACTED])');
     expect(String(token)).not.toContain('secret-task-token');
-    expect(JSON.stringify(token)).toBe('"secret-task-token"');
+    expect(JSON.stringify(token)).toBe('"[REDACTED]"');
+    expect(JSON.stringify(token)).not.toContain('secret-task-token');
     expect(token.equals(new WiroTaskToken('secret-task-token'))).toBe(true);
   });
 });

@@ -68,6 +68,13 @@ export class WiroSocketUnknownPayload {
   constructor(readonly value: WiroValue | undefined) {
     Object.freeze(this);
   }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      kind: this.kind,
+      value: '[REDACTED]',
+    });
+  }
 }
 
 export type WiroSocketPayload =
@@ -128,6 +135,21 @@ export class WiroSocketMessage {
       : undefined;
   }
 
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      id: this.id,
+      isTerminal: this.isTerminal,
+      messageText: this.messageText,
+      outputs: this.outputs,
+      payload: this.payload,
+      progress: this.progress,
+      result: this.result,
+      status: this.status.apiValue,
+      statusRawValue: this.statusRawValue,
+      taskToken: this.taskToken === undefined ? undefined : '[REDACTED]',
+    });
+  }
+
   static parse(json: WiroJson): WiroSocketMessage {
     const statusRawValue = readString(json.type) ?? '';
     return new WiroSocketMessage({
@@ -170,6 +192,13 @@ export class WiroSocketBinaryEvent {
 
   get isTerminal(): boolean {
     return false;
+  }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      byteLength: this.#bytes.byteLength,
+      kind: this.kind,
+    });
   }
 }
 

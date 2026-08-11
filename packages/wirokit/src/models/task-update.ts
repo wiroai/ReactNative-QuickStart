@@ -35,6 +35,13 @@ export class WiroTaskSnapshotUpdate {
   get status(): WiroTaskStatus {
     return this.task.status;
   }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      kind: this.kind,
+      task: this.task,
+    });
+  }
 }
 
 export class WiroTaskEventUpdate {
@@ -50,6 +57,13 @@ export class WiroTaskEventUpdate {
 
   get status(): WiroTaskStatus {
     return this.message.status;
+  }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      kind: this.kind,
+      message: this.message,
+    });
   }
 }
 
@@ -72,6 +86,13 @@ export class WiroTaskBinaryUpdate {
 
   get status(): undefined {
     return undefined;
+  }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      byteLength: this.#bytes.byteLength,
+      kind: this.kind,
+    });
   }
 }
 

@@ -1,5 +1,4 @@
 export {
-  decodeSocketFrame,
   WiroSocketBinaryEvent,
   WiroSocketEvent,
   WiroSocketLogPayload,
@@ -9,7 +8,6 @@ export {
   WiroSocketOutputsPayload,
   type WiroSocketPayload,
   WiroSocketProgressPayload,
-  type WiroSocketFrameLimits,
   WiroSocketUnknownPayload,
 } from './models/socket-event';
 export {
@@ -51,6 +49,7 @@ export {
   parseWiroValue,
   stringifyWiroJson,
   stringifyWiroValue,
+  MAX_WIRO_JSON_DEPTH,
   WiroArrayValue,
   WiroBooleanValue,
   WiroFileInputValue,

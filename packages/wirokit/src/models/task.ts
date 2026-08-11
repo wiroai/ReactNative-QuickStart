@@ -90,6 +90,26 @@ export class WiroTask {
     return this.status.kind === 'completed' && this.exitCode === 0;
   }
 
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      debugOutput: this.debugOutput,
+      elapsed: this.elapsed,
+      endTime: this.endTime?.toISOString(),
+      exitCode: this.exitCode,
+      id: this.id,
+      modelDescription: this.modelDescription,
+      modelOwner: this.modelOwner,
+      modelSlug: this.modelSlug,
+      outputs: this.outputs,
+      parameters: this.parameters,
+      startTime: this.startTime?.toISOString(),
+      status: this.status.apiValue,
+      statusRawValue: this.statusRawValue,
+      taskToken: this.taskToken === undefined ? undefined : '[REDACTED]',
+      totalCost: this.totalCost,
+    });
+  }
+
   static parse(
     json: WiroJson,
     onMalformedJson?: MalformedJsonHandler,

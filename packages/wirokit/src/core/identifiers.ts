@@ -110,7 +110,7 @@ export class WiroTaskToken {
   }
 
   toJSON(): string {
-    return this.rawValue;
+    return '[REDACTED]';
   }
 
   toString(): string {

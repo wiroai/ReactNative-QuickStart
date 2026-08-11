@@ -33,6 +33,15 @@ export class WiroRunResult {
     Object.freeze(this);
   }
 
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      errors: this.errors,
+      isSuccess: this.isSuccess,
+      taskId: this.taskId,
+      taskToken: this.taskToken === undefined ? undefined : '[REDACTED]',
+    });
+  }
+
   static parse(
     json: WiroJson,
     onMalformedJson?: MalformedJsonHandler,

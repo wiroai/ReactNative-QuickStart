@@ -3,7 +3,9 @@ import type { WiroFileInput } from './file-input';
 
 const NUMBER_PATTERN = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/;
 
-const MAX_JSON_DEPTH = 128;
+/** Shared nesting ceiling for parse, stringify, and recursive resolution. */
+export const MAX_WIRO_JSON_DEPTH = 128;
+const MAX_JSON_DEPTH = MAX_WIRO_JSON_DEPTH;
 
 export type WiroJson = Readonly<Record<string, WiroValue>>;
 
@@ -176,6 +178,13 @@ export class WiroFileInputValue {
   toString(): string {
     return 'WiroValue.FileInputValue([REDACTED])';
   }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      kind: this.kind,
+      value: this.value,
+    });
+  }
 }
 
 export type WiroValue =
@@ -231,6 +240,23 @@ export function parseWiroJson(json: string): WiroJson {
 }
 
 export function stringifyWiroValue(value: WiroValue): string {
+  return stringifyWiroValueAt(value, 0);
+}
+
+export function stringifyWiroJson(value: WiroJson): string {
+  return stringifyObject(value, 0);
+}
+
+export function wiroValueEquals(left: WiroValue, right: WiroValue): boolean {
+  return left.equals(right);
+}
+
+function stringifyWiroValueAt(value: WiroValue, depth: number): string {
+  if (depth > MAX_JSON_DEPTH) {
+    throw new WiroValidationError(
+      'JSON value exceeds the maximum nesting depth.',
+    );
+  }
   switch (value.kind) {
     case 'string':
       return JSON.stringify(value.value);
@@ -241,9 +267,11 @@ export function stringifyWiroValue(value: WiroValue): string {
     case 'null':
       return 'null';
     case 'array':
-      return `[${value.value.map(stringifyWiroValue).join(',')}]`;
+      return `[${value.value
+        .map((nested) => stringifyWiroValueAt(nested, depth + 1))
+        .join(',')}]`;
     case 'object':
-      return stringifyObject(value.value);
+      return stringifyObject(value.value, depth);
     case 'fileInput':
       throw new WiroValidationError(
         'Cannot serialize an unresolved WiroFileInput; ' +
@@ -252,17 +280,15 @@ export function stringifyWiroValue(value: WiroValue): string {
   }
 }
 
-export function stringifyWiroJson(value: WiroJson): string {
-  return stringifyObject(value);
-}
-
-export function wiroValueEquals(left: WiroValue, right: WiroValue): boolean {
-  return left.equals(right);
-}
-
-function stringifyObject(value: WiroJson): string {
+function stringifyObject(value: WiroJson, depth: number): string {
+  if (depth > MAX_JSON_DEPTH) {
+    throw new WiroValidationError(
+      'JSON value exceeds the maximum nesting depth.',
+    );
+  }
   const entries = Object.entries(value).map(
-    ([key, nested]) => `${JSON.stringify(key)}:${stringifyWiroValue(nested)}`,
+    ([key, nested]) =>
+      `${JSON.stringify(key)}:${stringifyWiroValueAt(nested, depth + 1)}`,
   );
   return `{${entries.join(',')}}`;
 }
@@ -277,7 +303,22 @@ function finiteNumber(value: string): number | null {
 
 function exactInteger(value: string): number | null {
   const parsed = finiteNumber(value);
-  return parsed !== null && Number.isSafeInteger(parsed) ? parsed : null;
+  if (parsed === null || !Number.isSafeInteger(parsed)) {
+    return null;
+  }
+  // Match Kotlin BigDecimal.intValueExact: fractional scale must be <= 0
+  // without stripping trailing zeros ("7.0" is not an exact integer).
+  const exponentIndex = value.search(/[eE]/u);
+  const coefficient = exponentIndex < 0 ? value : value.slice(0, exponentIndex);
+  const exponent =
+    exponentIndex < 0 ? 0 : Number(value.slice(exponentIndex + 1));
+  if (!Number.isSafeInteger(exponent)) {
+    return null;
+  }
+  const decimalIndex = coefficient.indexOf('.');
+  const fractionalDigits =
+    decimalIndex < 0 ? 0 : coefficient.length - decimalIndex - 1;
+  return fractionalDigits - exponent <= 0 ? parsed : null;
 }
 
 function hasSupportedDecimalScale(value: string): boolean {

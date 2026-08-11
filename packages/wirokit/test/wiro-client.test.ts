@@ -316,7 +316,7 @@ describe('WiroClient retries and safety', () => {
           WiroFileInput.bytes(new Uint8Array([1]), secretName),
         ),
       }),
-    ).rejects.toThrow('Could not encode request body as JSON.');
+    ).rejects.toThrow('Cannot serialize an unresolved WiroFileInput');
     expect(transport.requests).toHaveLength(0);
   });
 

@@ -84,3 +84,19 @@ assert.equal(typeof requiredSdk.WiroUploadResult, 'function');
 assert.equal(typeof requiredSdk.WiroFlux2ProRequest, 'function');
 assert.equal(requiredSdk.WiroKlingV3Mode.ultra4k, '4k');
 assert.equal(typeof requiredSdk.ExpoWiroSocketSessionFactory, 'function');
+
+const deniedExports = [
+  'decodeSocketFrame',
+  'WiroSocketFrameLimits',
+  'createRuntimeDependencies',
+  'parseRetryAfter',
+  'makeRequestUrl',
+  'taskInfoHandshakeJson',
+];
+for (const name of deniedExports) {
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(requiredSdk, name),
+    false,
+    `internal helper ${name} must not be a public export`,
+  );
+}

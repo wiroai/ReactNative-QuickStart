@@ -25,6 +25,13 @@ export class WiroUrlFileInput {
   toString(): string {
     return 'WiroFileInput.Url([REDACTED])';
   }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      kind: this.kind,
+      url: '[REDACTED]',
+    });
+  }
 }
 
 export class WiroBytesFileInput {
@@ -61,6 +68,15 @@ export class WiroBytesFileInput {
   toString(): string {
     return `WiroFileInput.Bytes(size=${this.#bytes.length})`;
   }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      fileName: this.fileName,
+      kind: this.kind,
+      mediaType: this.mediaType,
+      size: this.#bytes.length,
+    });
+  }
 }
 
 export class WiroBlobFileInput {
@@ -94,6 +110,15 @@ export class WiroBlobFileInput {
 
   toString(): string {
     return `WiroFileInput.Blob(size=${this.#blob.size})`;
+  }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      fileName: this.fileName,
+      kind: this.kind,
+      mediaType: this.mediaType,
+      size: this.#blob.size,
+    });
   }
 }
 
@@ -134,6 +159,16 @@ export class WiroUriFileInput {
 
   toString(): string {
     return 'WiroFileInput.Uri([REDACTED])';
+  }
+
+  toJSON(): Readonly<Record<string, unknown>> {
+    return Object.freeze({
+      fileName: this.fileName,
+      kind: this.kind,
+      mediaType: this.mediaType,
+      sizeBytes: this.sizeBytes,
+      uri: '[REDACTED]',
+    });
   }
 }
 

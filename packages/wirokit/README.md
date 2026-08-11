@@ -193,3 +193,13 @@ network stack can replace this header, especially with iOS `NSURLSession` or
 remote JavaScript debugging. Expo Go cannot install the native
 `RCTSetCustomNSURLSessionConfigurationProvider` override, so the header is
 best-effort in Expo Go. Authentication does not depend on `User-Agent`.
+
+## Safe logging and snapshots
+
+Prefer `JSON.stringify(task)`, `JSON.stringify(run)`,
+`JSON.stringify(update)`, and `WiroLogEvent` for diagnostics. Snapshot
+`toJSON` implementations redact task tokens, URI/URL file inputs, and raw
+task/socket payloads. Direct accessors such as `task.raw`,
+`task.taskToken.rawValue`, `error.rawResponseBody`, and file-input `url` /
+`uri` remain available for intentional debugging—do not log those fields in
+production telemetry.

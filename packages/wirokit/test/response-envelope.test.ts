@@ -13,6 +13,7 @@ import {
   decodeResponseEnvelope,
   extractCode,
   extractMessage,
+  MAX_RETRY_AFTER_MS,
   parseRetryAfter,
 } from '../src/transport/response-envelope';
 import { parseWiroJson } from '../src/core/wiro-value';
@@ -139,7 +140,7 @@ describe('response envelope decoding', () => {
     );
 
     expect(extractMessage(object)).toBe('42');
-    expect(extractCode(object)).toBe('7');
+    expect(extractCode(object)).toBe('7.0');
     expect(extractMessage(parseWiroJson('{"message":true}'))).toBe('true');
     expect(extractMessage(parseWiroJson('{}'))).toBeUndefined();
     expect(extractCode(parseWiroJson('{}'))).toBeUndefined();
@@ -155,6 +156,8 @@ describe('Retry-After parsing', () => {
     ['Wed, 21 Oct 2015 07:28:00 GMT', undefined],
     ['0', 0],
     ['0.25', 250],
+    ['2147483648', MAX_RETRY_AFTER_MS],
+    ['1e308', undefined],
   ])('parses %j as %s', (raw, expected) => {
     expect(parseRetryAfter(response(429, '', { 'Retry-After': raw }))).toBe(
       expected,

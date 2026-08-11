@@ -151,12 +151,11 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
         );
       }
 
-      const responseBody = await response.text();
-      if (utf8ByteLength(responseBody) > request.maxResponseBodyBytes) {
-        throw new WiroValidationError(
-          'Response body exceeds the configured REST payload limit.',
-        );
-      }
+      const responseBody = await readResponseBody(
+        response,
+        request.maxResponseBodyBytes,
+        controller,
+      );
 
       const headers: Record<string, string> = {};
       response.headers.forEach((value, name) => {
@@ -194,6 +193,76 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
     }
     this.#inFlight.clear();
   }
+}
+
+async function readResponseBody(
+  response: Response,
+  maxResponseBodyBytes: number,
+  controller: AbortController,
+): Promise<string> {
+  const body = response.body;
+  if (
+    body !== null &&
+    body !== undefined &&
+    typeof body.getReader === 'function'
+  ) {
+    return readStreamedResponseBody(body, maxResponseBodyBytes, controller);
+  }
+
+  const responseBody = await response.text();
+  if (utf8ByteLength(responseBody) > maxResponseBodyBytes) {
+    throw new WiroValidationError(
+      'Response body exceeds the configured REST payload limit.',
+    );
+  }
+  return responseBody;
+}
+
+async function readStreamedResponseBody(
+  body: ReadableStream<Uint8Array>,
+  maxResponseBodyBytes: number,
+  controller: AbortController,
+): Promise<string> {
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (value === undefined) {
+        continue;
+      }
+      totalBytes += value.byteLength;
+      if (totalBytes > maxResponseBodyBytes) {
+        controller.abort(
+          new WiroValidationError(
+            'Response body exceeds the configured REST payload limit.',
+          ),
+        );
+        throw new WiroValidationError(
+          'Response body exceeds the configured REST payload limit.',
+        );
+      }
+      chunks.push(value);
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      // Best-effort stream cleanup.
+    }
+  }
+
+  const merged = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
 }
 
 function immutableHeaders(

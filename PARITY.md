@@ -146,3 +146,29 @@ key remapping, Kling's always-present `multiPrompt`, and Hailuo's singular
 input-to-array encoding match the shared golden fixtures. The TypeScript
 options-object shape is the only API-style difference from Swift and Kotlin
 named parameters.
+
+## Step 10 — Hardening and parity audit
+
+| Area                    | React Native behavior                                                      | Reason                                                  |
+| ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Client concurrency      | Concurrent requests share one client; no actor isolation                   | Idiomatic JavaScript async model                        |
+| Signature nonces        | Process-wide monotonic numeric nonces                                      | Prevents same-millisecond parallel collisions           |
+| Cancellation            | Native `AbortError` and custom abort reasons preserved                     | React Native async contract; no retry after abort       |
+| Retry-After             | Non-finite/negative ignored; finite delays clamped to `2^31-1` ms          | Prevents `setTimeout` overflow; HTTP-date still ignored |
+| API code lexemes        | Fractional numbers keep wire text (`7.0` → `"7.0"`)                        | Matches Kotlin `BigDecimal.intValueExact`               |
+| Public `postJson` paths | Query, fragment, NUL/CRLF/`\`, decoded `.`/`..` rejected                   | Path injection hardening before networking              |
+| JSON depth              | Shared 128 limit for parse, stringify, and file resolution                 | Matches Kotlin recursion ceiling                        |
+| REST body streaming     | Chunked read when `ReadableStream` exists; else Content-Length + post-read | Expo Go may omit streams; fallback remains bounded      |
+| WebSocket enqueue       | Text/binary limits and queued-byte budget before buffering                 | Prevents unbounded memory growth                        |
+| Socket deadline         | Session closed immediately when timeout wins                               | Avoids leaked sockets after `WiroTimeoutError`          |
+| Redacted snapshots      | `toJSON` omits tokens, URI/URL inputs, and raw payloads                    | Safe logging; raw diagnostics stay on direct accessors  |
+| Public export surface   | `decodeSocketFrame` / `WiroSocketFrameLimits` not exported                 | Internal protocol helpers stay private                  |
+| Injectable seams        | `WiroHttpTransport` and `WiroSocketSessionFactory` remain public           | Deterministic tests without native modules              |
+| Coverage exclusion      | Only `src/index.ts` is excluded                                            | Re-export barrel; business logic stays covered          |
+| User-Agent              | `WiroKit-ReactNative/0.1.0`, best-effort                                   | RN/Expo may replace the header                          |
+| Expo URI uploads        | Native `FormData` `file://` / `content://`                                 | No JS heap buffering of large picker files              |
+
+Intentional differences from Swift remain: concurrent (non-actor) client,
+native abort semantics, Expo URI uploads, React Native User-Agent, Kotlin-style
+terminal Detail snapshot after socket completion, monotonic tracking clock, and
+REST/WebSocket body limits where Swift is less strict.

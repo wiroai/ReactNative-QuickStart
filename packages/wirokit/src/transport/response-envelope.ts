@@ -134,6 +134,9 @@ export function extractCode(object: WiroJson): string | undefined {
     : undefined;
 }
 
+/** Upper bound for Retry-After delays (~24.8d); prevents setTimeout overflow. */
+export const MAX_RETRY_AFTER_MS = 2_147_483_647;
+
 export function parseRetryAfter(
   response: WiroHttpResponse,
 ): number | undefined {
@@ -145,7 +148,11 @@ export function parseRetryAfter(
   if (!Number.isFinite(seconds) || seconds < 0) {
     return undefined;
   }
-  return seconds * 1_000;
+  const milliseconds = seconds * 1_000;
+  if (!Number.isFinite(milliseconds)) {
+    return undefined;
+  }
+  return Math.min(milliseconds, MAX_RETRY_AFTER_MS);
 }
 
 function identity(value: string): string {

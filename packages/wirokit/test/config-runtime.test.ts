@@ -170,6 +170,7 @@ describe('runtime seams and cancellation', () => {
     });
 
     expect(runtime.nonceProvider.nextNonce()).toBe('1700000000000');
+    expect(runtime.nonceProvider.nextNonce()).toBe('1700000000001');
     expect(runtime.jitterProvider.nextFactor()).toBe(1);
     expect(runtime.monotonicClock.milliseconds()).toBe(25);
   });
