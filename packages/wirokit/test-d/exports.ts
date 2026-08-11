@@ -13,9 +13,13 @@ import {
   WiroModelSort,
   type WiroPaginatedResult,
   type WiroRunResult,
+  type WiroTaskResult,
   type WiroTask,
   WiroTaskId,
   WiroTaskStatus,
+  WiroTaskToken,
+  type WiroTaskUpdate,
+  WiroTracking,
   WiroHttpResponse,
   type WiroHttpTransport,
   WiroValidationError,
@@ -53,6 +57,13 @@ const request = Wiro.model('owner/project', {
 const run: Promise<WiroRunResult> = client.run(request);
 const task: Promise<WiroTask> = client.getTaskById(new WiroTaskId('task-id'));
 const terminal: boolean = WiroTaskStatus.completed.isTerminal;
+const taskToken = new WiroTaskToken('task-token');
+const watch: AsyncIterable<WiroTask> = client.watchTask(taskToken);
+const subscription: Promise<WiroTaskResult> = client.subscribe(request);
+const subscriptionStream: Promise<AsyncIterable<WiroTaskUpdate>> =
+  client.subscribeStream(request, {
+    timeoutMs: WiroTracking.defaultTimeoutMs,
+  });
 const contentSource: WiroFileContentSource = {
   async read(input) {
     return new WiroBytesFileContent(
@@ -78,4 +89,7 @@ void request;
 void run;
 void task;
 void terminal;
+void watch;
+void subscription;
+void subscriptionStream;
 void upload;

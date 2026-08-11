@@ -63,6 +63,30 @@ if (run.taskToken !== undefined) {
   console.log(task.status.apiValue, task.isSuccessful);
 }
 
+const result = await proxyClient.subscribe(
+  Wiro.model('owner/project', {
+    prompt: WiroValue.string('A mountain lake'),
+  }),
+  {
+    onUpdate(update) {
+      console.log(update.status.apiValue);
+    },
+    timeoutMs: 120_000,
+  },
+);
+console.log(result.kind);
+
+// /Run completes exactly once before this iterable is returned. Re-consuming
+// the same iterable polls the captured task token without running again.
+const updates = await proxyClient.subscribeStream(
+  Wiro.model('owner/project', {
+    prompt: WiroValue.string('A second landscape'),
+  }),
+);
+for await (const update of updates) {
+  console.log(update.status.apiValue);
+}
+
 // Pass a URI returned by Expo DocumentPicker or ImagePicker. Android
 // content:// and iOS file:// values are sent with React Native FormData.
 const image = WiroFileInput.uri(pickerAsset.uri, {
@@ -118,6 +142,22 @@ available. Pass an `AbortSignal` to cancel.
 `runModel`, or upload methods. Tests and non-Expo platforms can return
 `WiroBytesFileContent`; the default Expo source preserves picker URIs for
 native `FormData`.
+
+## Polling and subscriptions
+
+`watchTask` is a single-consumer `AsyncIterable` that emits the initial task
+snapshot immediately and continues until a completed or cancelled snapshot.
+`waitForTask` returns only the terminal task. Both use monotonic deadlines,
+clamp each polling sleep to the remaining timeout, and accept `AbortSignal`.
+
+`subscribe` starts one model run, reports snapshot updates, and returns a
+`WiroTaskResult`. `subscribeStream` also performs exactly one billable run
+before returning its reusable iterable. Creating another iterator from that
+same value only re-polls the captured token; it never repeats `/Run`.
+
+The default tracking timeout is 600 seconds. `trackingMode: 'webSocket'`
+temporarily uses polling in Step 7; native WebSocket tracking is introduced in
+Step 8.
 
 ## React Native networking note
 

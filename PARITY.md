@@ -86,3 +86,21 @@ Native URI uploads intentionally omit a caller-supplied `Content-Type` header;
 React Native adds the correct multipart boundary. Buffered uploads set the
 boundary explicitly and match the Swift/Kotlin golden bytes. All file parts
 use field name `file` and `application/octet-stream`.
+
+## Step 7 — Polling and subscriptions
+
+| Area                  | React Native behavior                             | Reason                                     |
+| --------------------- | ------------------------------------------------- | ------------------------------------------ |
+| Deadline clock        | Monotonic milliseconds                            | Immune to wall-clock changes               |
+| Polling sleep         | Clamped to the remaining timeout                  | Never overshoots the tracking budget       |
+| First snapshot        | Requested immediately before any sleep            | Matches Swift and Kotlin                   |
+| `watchTask`           | Explicit single-consumer `AsyncIterable`          | Prevents accidental duplicate polling      |
+| `subscribeStream` run | Completes once before returning the iterable      | Prevents duplicate billable runs           |
+| Stream re-consumption | Re-polls the captured token; never repeats `/Run` | React Strict Mode-safe subscription handle |
+| Cancellation          | Native `AbortError`                               | React Native async convention              |
+| Terminal statuses     | Completed and cancelled only                      | Matches task-status parity                 |
+| Step 7 WebSocket mode | Temporarily follows polling                       | WebSocket transport belongs to Step 8      |
+
+`subscribe` and `subscribeStream` validate timeout and tracking mode before
+starting a billable run. Polling emits only `WiroTaskSnapshotUpdate` values;
+socket event and binary update variants are introduced with Step 8.

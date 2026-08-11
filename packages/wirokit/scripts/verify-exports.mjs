@@ -14,6 +14,9 @@ import {
   WiroPaginatedResult,
   WiroTask,
   WiroTaskStatus,
+  WiroTaskTrackingMode,
+  WiroTaskUpdate,
+  WiroTracking,
   WiroUploadResult,
   WiroValidationError,
   WiroValue,
@@ -38,6 +41,9 @@ assert.equal(typeof WiroPaginatedResult.parse, 'function');
 assert.equal(Wiro.model('owner/project', {}).model.slug, 'owner/project');
 assert.equal(WiroTaskStatus.completed.isTerminal, true);
 assert.equal(typeof WiroTask.parse, 'function');
+assert.equal(WiroTaskTrackingMode.polling, 'polling');
+assert.equal(typeof WiroTaskUpdate.snapshot, 'function');
+assert.equal(WiroTracking.defaultTimeoutMs, 600_000);
 assert.equal(typeof WiroUploadResult.parse, 'function');
 assert.equal(typeof ExpoWiroFileContentSource, 'function');
 client.close();
@@ -48,4 +54,5 @@ assert.equal(
 assert.equal(typeof requiredSdk.WiroClient, 'function');
 assert.equal(typeof requiredSdk.WiroModelSchema, 'function');
 assert.equal(typeof requiredSdk.WiroTask, 'function');
+assert.equal(requiredSdk.WiroTaskTrackingMode.webSocket, 'webSocket');
 assert.equal(typeof requiredSdk.WiroUploadResult, 'function');

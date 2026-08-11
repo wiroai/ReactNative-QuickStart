@@ -7,8 +7,11 @@ export {
   type WiroProxyClientOptions,
   type WiroRunModelOptions,
   type WiroSearchModelsOptions,
+  type WiroSubscribeOptions,
+  type WiroSubscribeStreamOptions,
   type WiroUploadFromUriOptions,
   type WiroUploadOptions,
+  type WiroWatchTaskOptions,
 } from './client/wiro-client';
 export { WiroAuthType, WiroClientDefaults } from './config/auth';
 export {
@@ -134,6 +137,12 @@ export {
   type WiroTaskProgressOptions,
 } from './models/task-progress';
 export { WiroTaskStatus, type WiroTaskStatusKind } from './models/task-status';
+export {
+  WiroTaskSnapshotUpdate,
+  WiroTaskTrackingMode,
+  WiroTaskUpdate,
+  WiroTracking,
+} from './models/task-update';
 export {
   WiroUploadedFile,
   type WiroUploadedFileOptions,

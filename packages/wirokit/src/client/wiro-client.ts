@@ -10,7 +10,7 @@ import {
 } from '../config/discovery';
 import { WiroRetryPolicy } from '../config/retry-policy';
 import {
-  type WiroModelId,
+  WiroModelId,
   type WiroTaskId,
   WiroTaskToken,
 } from '../core/identifiers';
@@ -77,9 +77,16 @@ import {
 import { WiroExploreCategory } from '../models/explore';
 import { WiroModel } from '../models/model';
 import { WiroPaginatedResult } from '../models/pagination';
-import { WiroRunResult } from '../models/run-result';
+import { WiroRunResult, WiroTaskResult } from '../models/run-result';
 import { WiroModelSchema } from '../models/schema';
 import { WiroTask } from '../models/task';
+import {
+  WiroTaskTrackingMode,
+  type WiroTaskTrackingMode as WiroTaskTrackingModeType,
+  WiroTaskUpdate,
+  type WiroTaskUpdate as WiroTaskUpdateType,
+  WiroTracking,
+} from '../models/task-update';
 import { WiroUploadResult } from '../models/upload-result';
 import type { WiroModelRequest } from '../requests/model-request';
 import {
@@ -154,6 +161,21 @@ export interface WiroUploadFromUriOptions extends WiroUploadOptions {
   readonly fileName?: string;
   readonly mediaType?: string;
   readonly sizeBytes?: number;
+}
+
+export interface WiroWatchTaskOptions extends WiroDiscoveryRequestOptions {
+  readonly timeoutMs?: number;
+}
+
+export interface WiroSubscribeOptions extends WiroRunModelOptions {
+  readonly onUpdate?: (update: WiroTaskUpdateType) => void | Promise<void>;
+  readonly timeoutMs?: number;
+  readonly trackingMode?: WiroTaskTrackingModeType;
+}
+
+export interface WiroSubscribeStreamOptions extends WiroRunModelOptions {
+  readonly timeoutMs?: number;
+  readonly trackingMode?: WiroTaskTrackingModeType;
 }
 
 interface ApiKeyAuth {
@@ -440,6 +462,107 @@ export class WiroClient {
     return this.runModel(request.model, request.parameters(), options);
   }
 
+  watchTask(
+    token: WiroTaskToken,
+    options: WiroWatchTaskOptions = {},
+  ): AsyncIterable<WiroTask> {
+    const timeoutMs = trackingTimeout(options.timeoutMs);
+    return new SingleConsumerAsyncIterable(() =>
+      this.pollTaskSnapshots(token, timeoutMs, options.signal),
+    );
+  }
+
+  async waitForTask(
+    token: WiroTaskToken,
+    options: WiroWatchTaskOptions = {},
+  ): Promise<WiroTask> {
+    const timeoutMs = trackingTimeout(options.timeoutMs);
+    for await (const task of this.pollTaskSnapshots(
+      token,
+      timeoutMs,
+      options.signal,
+    )) {
+      if (task.status.isTerminal) {
+        return task;
+      }
+    }
+    throw new WiroTimeoutError(trackingTimeoutMessage(timeoutMs), timeoutMs);
+  }
+
+  subscribe(
+    modelId: WiroModelId,
+    parameters?: WiroJson,
+    options?: WiroSubscribeOptions,
+  ): Promise<WiroTaskResult>;
+
+  subscribe(
+    request: WiroModelRequest,
+    options?: WiroSubscribeOptions,
+  ): Promise<WiroTaskResult>;
+
+  async subscribe(
+    modelOrRequest: WiroModelId | WiroModelRequest,
+    parametersOrOptions: WiroJson | WiroSubscribeOptions = {},
+    modelOptions: WiroSubscribeOptions = {},
+  ): Promise<WiroTaskResult> {
+    const invocation = subscriptionInvocation(
+      modelOrRequest,
+      parametersOrOptions,
+      modelOptions,
+    );
+    const timeoutMs = trackingTimeout(invocation.options.timeoutMs);
+    validateTrackingMode(invocation.options.trackingMode);
+    const token = await this.startTrackedRun(
+      invocation.modelId,
+      invocation.parameters,
+      invocation.options,
+    );
+    for await (const task of this.pollTaskSnapshots(
+      token,
+      timeoutMs,
+      invocation.options.signal,
+    )) {
+      await invocation.options.onUpdate?.(WiroTaskUpdate.snapshot(task));
+      if (task.status.isTerminal) {
+        return WiroTaskResult.from(task);
+      }
+    }
+    throw new WiroTimeoutError(trackingTimeoutMessage(timeoutMs), timeoutMs);
+  }
+
+  subscribeStream(
+    modelId: WiroModelId,
+    parameters?: WiroJson,
+    options?: WiroSubscribeStreamOptions,
+  ): Promise<AsyncIterable<WiroTaskUpdateType>>;
+
+  subscribeStream(
+    request: WiroModelRequest,
+    options?: WiroSubscribeStreamOptions,
+  ): Promise<AsyncIterable<WiroTaskUpdateType>>;
+
+  async subscribeStream(
+    modelOrRequest: WiroModelId | WiroModelRequest,
+    parametersOrOptions: WiroJson | WiroSubscribeStreamOptions = {},
+    modelOptions: WiroSubscribeStreamOptions = {},
+  ): Promise<AsyncIterable<WiroTaskUpdateType>> {
+    const invocation = subscriptionInvocation(
+      modelOrRequest,
+      parametersOrOptions,
+      modelOptions,
+    );
+    const timeoutMs = trackingTimeout(invocation.options.timeoutMs);
+    validateTrackingMode(invocation.options.trackingMode);
+    const token = await this.startTrackedRun(
+      invocation.modelId,
+      invocation.parameters,
+      invocation.options,
+    );
+    return new ReusableAsyncIterable(() =>
+      this.pollTaskUpdates(token, timeoutMs, invocation.options.signal),
+    );
+  }
+
   async getTask(
     token: WiroTaskToken,
     options: WiroDiscoveryRequestOptions = {},
@@ -507,6 +630,66 @@ export class WiroClient {
       signalOptions(options.signal),
     );
     return readBoolean(json.result) ?? false;
+  }
+
+  private async startTrackedRun(
+    modelId: WiroModelId,
+    parameters: WiroJson,
+    options: WiroRunModelOptions,
+  ): Promise<WiroTaskToken> {
+    const run = await this.runModel(modelId, parameters, options);
+    if (run.taskToken === undefined) {
+      throw new WiroUnknownApiError(
+        'The model run response did not contain a task token.',
+        { statusCode: 200 },
+      );
+    }
+    return run.taskToken;
+  }
+
+  private async *pollTaskUpdates(
+    token: WiroTaskToken,
+    timeoutMs: number,
+    signal: AbortSignal | undefined,
+  ): AsyncGenerator<WiroTaskUpdateType, void, void> {
+    for await (const task of this.pollTaskSnapshots(token, timeoutMs, signal)) {
+      yield WiroTaskUpdate.snapshot(task);
+    }
+  }
+
+  private async *pollTaskSnapshots(
+    token: WiroTaskToken,
+    timeoutMs: number,
+    signal: AbortSignal | undefined,
+  ): AsyncGenerator<WiroTask, void, void> {
+    const state = getState(this);
+    ensureOpen(state);
+    const scope = createTrackingScope(state, signal);
+    const started = state.runtime.monotonicClock.milliseconds();
+    try {
+      while (trackingElapsed(state, started) < timeoutMs) {
+        ensureOpen(state);
+        throwIfAborted(scope.signal);
+        const task = await this.getTask(token, signalOptions(scope.signal));
+        yield task;
+        if (task.status.isTerminal) {
+          return;
+        }
+        throwIfAborted(scope.signal);
+        const remainingMs = timeoutMs - trackingElapsed(state, started);
+        if (remainingMs <= 0) {
+          break;
+        }
+        await state.runtime.delay.sleep(
+          Math.min(remainingMs, this.pollIntervalMs),
+          scope.signal,
+        );
+        throwIfAborted(scope.signal);
+      }
+      throw new WiroTimeoutError(trackingTimeoutMessage(timeoutMs), timeoutMs);
+    } finally {
+      scope.dispose();
+    }
   }
 
   private async sendUpload(
@@ -1012,6 +1195,123 @@ function malformedJsonHandler(state: ClientState): MalformedJsonHandler {
       }),
     );
   };
+}
+
+interface SubscriptionInvocation {
+  readonly modelId: WiroModelId;
+  readonly options: WiroSubscribeOptions;
+  readonly parameters: WiroJson;
+}
+
+interface TrackingScope {
+  readonly dispose: () => void;
+  readonly signal: AbortSignal;
+}
+
+class SingleConsumerAsyncIterable<T> implements AsyncIterable<T> {
+  readonly #factory: () => AsyncIterator<T>;
+  #consumed = false;
+
+  constructor(factory: () => AsyncIterator<T>) {
+    this.#factory = factory;
+  }
+
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    if (this.#consumed) {
+      throw new WiroValidationError(
+        'This task watch can only be consumed once.',
+      );
+    }
+    this.#consumed = true;
+    return this.#factory();
+  }
+}
+
+class ReusableAsyncIterable<T> implements AsyncIterable<T> {
+  readonly #factory: () => AsyncIterator<T>;
+
+  constructor(factory: () => AsyncIterator<T>) {
+    this.#factory = factory;
+    Object.freeze(this);
+  }
+
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    return this.#factory();
+  }
+}
+
+function subscriptionInvocation(
+  modelOrRequest: WiroModelId | WiroModelRequest,
+  parametersOrOptions: WiroJson | WiroSubscribeOptions,
+  modelOptions: WiroSubscribeOptions,
+): SubscriptionInvocation {
+  if (modelOrRequest instanceof WiroModelId) {
+    return {
+      modelId: modelOrRequest,
+      options: modelOptions,
+      parameters: parametersOrOptions as WiroJson,
+    };
+  }
+  return {
+    modelId: modelOrRequest.model,
+    options: parametersOrOptions as WiroSubscribeOptions,
+    parameters: modelOrRequest.parameters(),
+  };
+}
+
+function trackingTimeout(timeoutMs: number | undefined): number {
+  return requirePositiveDuration(
+    timeoutMs ?? WiroTracking.defaultTimeoutMs,
+    'timeout',
+  );
+}
+
+function validateTrackingMode(
+  mode: WiroTaskTrackingModeType | undefined,
+): void {
+  if (
+    mode !== undefined &&
+    mode !== WiroTaskTrackingMode.polling &&
+    mode !== WiroTaskTrackingMode.webSocket
+  ) {
+    throw new WiroValidationError('trackingMode must be polling or webSocket.');
+  }
+}
+
+function createTrackingScope(
+  state: ClientState,
+  externalSignal: AbortSignal | undefined,
+): TrackingScope {
+  const controller = new AbortController();
+  const abort = (): void => {
+    controller.abort(externalSignal?.reason ?? createAbortError());
+  };
+  if (externalSignal?.aborted === true) {
+    abort();
+  } else {
+    externalSignal?.addEventListener('abort', abort, {
+      once: true,
+    });
+  }
+  state.controllers.add(controller);
+  return {
+    dispose(): void {
+      externalSignal?.removeEventListener('abort', abort);
+      state.controllers.delete(controller);
+      if (!controller.signal.aborted) {
+        controller.abort(createAbortError());
+      }
+    },
+    signal: controller.signal,
+  };
+}
+
+function trackingElapsed(state: ClientState, startedMs: number): number {
+  return state.runtime.monotonicClock.milliseconds() - startedMs;
+}
+
+function trackingTimeoutMessage(timeoutMs: number): string {
+  return `Task did not finish within ${timeoutMs} ms.`;
 }
 
 function containsFileInput(value: WiroJson): boolean {
