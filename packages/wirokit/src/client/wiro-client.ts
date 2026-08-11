@@ -15,7 +15,16 @@ import {
   WiroTaskToken,
 } from '../core/identifiers';
 import {
+  WiroBlobFileInput,
+  WiroBytesFileInput,
+  type WiroFileInput,
+  WiroUriFileInput,
+} from '../core/file-input';
+import {
+  WiroArrayValue,
+  WiroFileInputValue,
   type WiroJson,
+  WiroObjectValue,
   WiroValue,
   stringifyWiroJson,
 } from '../core/wiro-value';
@@ -28,10 +37,20 @@ import {
   WiroValidationError,
 } from '../errors/wiro-error';
 import {
+  ExpoWiroFileContentSource,
+  WiroBytesFileContent,
+  type WiroFileContentSource,
+  type WiroReadableFileInput,
+} from '../files/file-content-source';
+import {
   type MalformedJsonHandler,
   readBoolean,
   readObjects,
 } from '../internal/json-reader';
+import {
+  WiroMultipartBody,
+  buildMultipartFilePart,
+} from '../internal/multipart-form-data';
 import {
   type WiroRuntimeDependencies,
   type WiroRuntimeOverrides,
@@ -46,6 +65,7 @@ import {
   requirePositiveDuration,
   validateBaseUrl,
   validateCallbackUrl,
+  validateFileName,
   validateHeader,
   validateWebSocketUrl,
 } from '../internal/validation';
@@ -60,6 +80,7 @@ import { WiroPaginatedResult } from '../models/pagination';
 import { WiroRunResult } from '../models/run-result';
 import { WiroModelSchema } from '../models/schema';
 import { WiroTask } from '../models/task';
+import { WiroUploadResult } from '../models/upload-result';
 import type { WiroModelRequest } from '../requests/model-request';
 import {
   FetchWiroHttpTransport,
@@ -72,6 +93,7 @@ import { WIROKIT_VERSION } from '../wiro-kit-info';
 
 interface WiroClientCommonOptions {
   readonly closeTransportOnClose?: boolean;
+  readonly fileContentSource?: WiroFileContentSource;
   readonly limits?: WiroClientLimits | WiroClientLimitsOptions;
   readonly logger?: WiroLogger;
   readonly pollIntervalMs?: number;
@@ -121,6 +143,17 @@ export interface WiroSearchModelsOptions extends WiroDiscoveryRequestOptions {
 
 export interface WiroRunModelOptions extends WiroDiscoveryRequestOptions {
   readonly callbackUrl?: string | null;
+  readonly contentSource?: WiroFileContentSource;
+}
+
+export interface WiroUploadOptions extends WiroDiscoveryRequestOptions {
+  readonly contentSource?: WiroFileContentSource;
+}
+
+export interface WiroUploadFromUriOptions extends WiroUploadOptions {
+  readonly fileName?: string;
+  readonly mediaType?: string;
+  readonly sizeBytes?: number;
 }
 
 interface ApiKeyAuth {
@@ -144,6 +177,7 @@ type ClientAuth = ApiKeyAuth | SignatureAuth | ProxyAuth;
 interface ClientState {
   readonly auth: ClientAuth;
   readonly controllers: Set<AbortController>;
+  readonly fileContentSource: WiroFileContentSource | undefined;
   readonly logger: WiroLogger | undefined;
   readonly ownsTransport: boolean;
   readonly runtime: WiroRuntimeDependencies;
@@ -199,6 +233,7 @@ export class WiroClient {
       auth,
       closed: false,
       controllers: new Set(),
+      fileContentSource: options.fileContentSource,
       logger: options.logger,
       ownsTransport:
         options.transport === undefined ||
@@ -296,13 +331,93 @@ export class WiroClient {
     return WiroModelSchema.parse(model, onMalformedJson);
   }
 
+  async uploadFile(
+    data: Uint8Array | Blob,
+    fileName: string,
+    options: WiroUploadOptions = {},
+  ): Promise<WiroUploadResult> {
+    const input =
+      data instanceof Uint8Array
+        ? new WiroBytesFileInput(data, fileName)
+        : new WiroBlobFileInput(data, fileName);
+    return this.uploadFileInput(input, options);
+  }
+
+  async uploadFileFromUri(
+    uri: string,
+    options: WiroUploadFromUriOptions = {},
+  ): Promise<WiroUploadResult> {
+    const input = new WiroUriFileInput(uri, {
+      ...(options.fileName === undefined ? {} : { fileName: options.fileName }),
+      ...(options.mediaType === undefined
+        ? {}
+        : { mediaType: options.mediaType }),
+      ...(options.sizeBytes === undefined
+        ? {}
+        : { sizeBytes: options.sizeBytes }),
+    });
+    return this.uploadFileInput(input, options);
+  }
+
+  async uploadFileInput(
+    input: WiroReadableFileInput,
+    options: WiroUploadOptions = {},
+  ): Promise<WiroUploadResult> {
+    const state = getState(this);
+    ensureOpen(state);
+    throwIfAborted(options.signal);
+    rejectDeclaredOversize(input, this.limits.maxInMemoryUploadBytes);
+
+    const content =
+      input instanceof WiroBytesFileInput
+        ? new WiroBytesFileContent(input.bytes, input.fileName)
+        : await (
+            options.contentSource ??
+            state.fileContentSource ??
+            new ExpoWiroFileContentSource()
+          ).read(input, signalOptions(options.signal));
+    throwIfAborted(options.signal);
+    const fileName = validateFileName(content.fileName);
+    let uploadBody: WiroMultipartBody | FormData;
+    if (content.kind === 'bytes') {
+      const bytes = content.bytes;
+      if (bytes.byteLength > this.limits.maxInMemoryUploadBytes) {
+        throw new WiroValidationError(
+          'In-memory upload exceeds the configured size limit.',
+        );
+      }
+      uploadBody = buildMultipartFilePart({
+        bytes,
+        fileName,
+      });
+    } else {
+      uploadBody = createExpoUriFormData(content.uri, fileName);
+    }
+    const json = await this.sendUpload(uploadBody, options.signal);
+    return WiroUploadResult.parse(json, malformedJsonHandler(state));
+  }
+
+  async resolveFileInputs(
+    parameters: WiroJson,
+    options: WiroUploadOptions = {},
+  ): Promise<WiroJson> {
+    const resolved: Record<string, WiroValue> = {};
+    for (const [key, value] of Object.entries(parameters)) {
+      resolved[key] = await resolveFileValue(this, value, options);
+    }
+    return WiroValue.object(resolved).value;
+  }
+
   async runModel(
     modelId: WiroModelId,
     parameters: WiroJson = {},
     options: WiroRunModelOptions = {},
   ): Promise<WiroRunResult> {
+    const resolvedParameters = containsFileInput(parameters)
+      ? await this.resolveFileInputs(parameters, options)
+      : parameters;
     const body: Record<string, WiroValue> = {
-      ...parameters,
+      ...resolvedParameters,
     };
     if (options.callbackUrl != null) {
       body.callbackUrl = WiroValue.string(
@@ -392,6 +507,97 @@ export class WiroClient {
       signalOptions(options.signal),
     );
     return readBoolean(json.result) ?? false;
+  }
+
+  private async sendUpload(
+    uploadBody: WiroMultipartBody | FormData,
+    signal: AbortSignal | undefined,
+  ): Promise<WiroJson> {
+    const state = getState(this);
+    ensureOpen(state);
+    throwIfAborted(signal);
+    const url = makeRequestUrl(this.baseUrl, '/File/Upload');
+    const headers = buildAuthHeaders(
+      state.auth,
+      state.runtime,
+      uploadBody instanceof WiroMultipartBody ? uploadBody.contentType : null,
+    );
+    const sensitiveValues = collectSensitiveValues(state.auth, headers);
+    const started = state.runtime.clock.epochMilliseconds();
+    logEvent(
+      state,
+      new WiroLogEvent({
+        level: WiroLogLevel.debug,
+        message: 'Starting request.',
+        method: 'POST',
+        retryCount: 0,
+        url,
+      }),
+    );
+
+    let response: WiroHttpResponse;
+    try {
+      response = await performAttempt(
+        state,
+        new WiroHttpRequest({
+          ...(uploadBody instanceof WiroMultipartBody
+            ? { binaryBody: uploadBody.body }
+            : { formDataBody: uploadBody }),
+          headers,
+          maxResponseBodyBytes: this.limits.maxRestBodyBytes,
+          method: 'POST',
+          timeoutMs: this.requestTimeoutMs,
+          url,
+        }),
+        signal,
+        this.requestTimeoutMs,
+      );
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+      const mapped = mapTransportError(error);
+      logFailure(state, mapped, url, 0);
+      throw mapped;
+    }
+
+    logEvent(
+      state,
+      new WiroLogEvent({
+        durationMs: durationSince(
+          state.runtime.clock.epochMilliseconds(),
+          started,
+        ),
+        level: WiroLogLevel.info,
+        message: 'Request completed.',
+        method: 'POST',
+        retryCount: 0,
+        statusCode: response.statusCode,
+        url,
+      }),
+    );
+    if (utf8ByteLength(response.body) > this.limits.maxRestBodyBytes) {
+      const error = new WiroValidationError(
+        'Response body exceeds the configured REST payload limit.',
+      );
+      logFailure(state, error, url, 0);
+      throw error;
+    }
+
+    try {
+      throwIfAborted(signal);
+      return decodeResponseEnvelope(response, (message) =>
+        redactSensitiveText(message, sensitiveValues),
+      );
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+      if (error instanceof WiroError) {
+        logFailure(state, error, url, 0);
+      }
+      throw error;
+    }
   }
 
   async postJson(
@@ -613,6 +819,7 @@ function resolveAuth(options: WiroClientOptions): ClientAuth {
 function buildAuthHeaders(
   auth: ClientAuth,
   runtime: WiroRuntimeDependencies,
+  contentType: string | null = 'application/json',
 ): Readonly<Record<string, string>> {
   const headers: Record<string, string> = {};
   if (auth.type === WiroAuthType.apiKey) {
@@ -634,7 +841,9 @@ function buildAuthHeaders(
     }
   }
   headers['User-Agent'] = makeWiroUserAgent();
-  headers['Content-Type'] = 'application/json';
+  if (contentType !== null) {
+    headers['Content-Type'] = contentType;
+  }
   return Object.freeze(headers);
 }
 
@@ -696,7 +905,13 @@ async function performAttempt(
   try {
     const operation = state.transport.perform(
       new WiroHttpRequest({
+        ...(request.binaryBody === undefined
+          ? {}
+          : { binaryBody: request.binaryBody }),
         ...(request.body === undefined ? {} : { body: request.body }),
+        ...(request.formDataBody === undefined
+          ? {}
+          : { formDataBody: request.formDataBody }),
         headers: request.headers,
         maxResponseBodyBytes: request.maxResponseBodyBytes,
         method: request.method,
@@ -797,6 +1012,105 @@ function malformedJsonHandler(state: ClientState): MalformedJsonHandler {
       }),
     );
   };
+}
+
+function containsFileInput(value: WiroJson): boolean {
+  return Object.values(value).some(containsFileInputValue);
+}
+
+function containsFileInputValue(value: WiroValue): boolean {
+  if (value instanceof WiroFileInputValue) {
+    return true;
+  }
+  if (value instanceof WiroObjectValue) {
+    return Object.values(value.value).some(containsFileInputValue);
+  }
+  if (value instanceof WiroArrayValue) {
+    return value.value.some(containsFileInputValue);
+  }
+  return false;
+}
+
+async function resolveFileValue(
+  client: WiroClient,
+  value: WiroValue,
+  options: WiroUploadOptions,
+): Promise<WiroValue> {
+  if (value instanceof WiroFileInputValue) {
+    return resolveFileInput(client, value.value, options);
+  }
+  if (value instanceof WiroObjectValue) {
+    const resolved: Record<string, WiroValue> = {};
+    for (const [key, nested] of Object.entries(value.value)) {
+      resolved[key] = await resolveFileValue(client, nested, options);
+    }
+    return WiroValue.object(resolved);
+  }
+  if (value instanceof WiroArrayValue) {
+    const resolved: WiroValue[] = [];
+    for (const nested of value.value) {
+      resolved.push(await resolveFileValue(client, nested, options));
+    }
+    return WiroValue.array(resolved);
+  }
+  return value;
+}
+
+async function resolveFileInput(
+  client: WiroClient,
+  input: WiroFileInput,
+  options: WiroUploadOptions,
+): Promise<WiroValue> {
+  if (input.kind === 'url') {
+    return WiroValue.string(input.wireValue);
+  }
+  const result = await client.uploadFileInput(input, options);
+  const url = result.files[0]?.url;
+  if (url === undefined) {
+    throw new WiroUnknownApiError(
+      `The upload for "${fileInputName(input)}" ` +
+        'did not return a file URL.',
+      { statusCode: 200 },
+    );
+  }
+  return WiroValue.string(url.toString());
+}
+
+function fileInputName(input: WiroReadableFileInput): string {
+  return input instanceof WiroUriFileInput
+    ? (input.fileName ?? 'upload.bin')
+    : input.fileName;
+}
+
+function createExpoUriFormData(uri: string, fileName: string): FormData {
+  if (typeof FormData !== 'function') {
+    throw new WiroValidationError('FormData is required for URI file inputs.');
+  }
+  const formData = new FormData();
+  const part = {
+    name: fileName,
+    type: 'application/octet-stream',
+    uri,
+  };
+  formData.append('file', part as unknown as Blob);
+  return formData;
+}
+
+function rejectDeclaredOversize(
+  input: WiroReadableFileInput,
+  maximumBytes: number,
+): void {
+  const size =
+    input instanceof WiroBytesFileInput
+      ? input.bytes.byteLength
+      : input instanceof WiroBlobFileInput
+        ? input.blob.size
+        : undefined;
+  if (size !== undefined && size > maximumBytes) {
+    throw new WiroValidationError(
+      'In-memory upload exceeds the configured size limit.',
+    );
+  }
 }
 
 function taskFromResponse(

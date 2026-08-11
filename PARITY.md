@@ -66,3 +66,23 @@ SDKs.
 
 Run, task detail, cancel, and kill request bodies remain wire-compatible with
 the shared golden fixtures.
+
+## Step 6 — Uploads and file resolution
+
+| Area              | React Native behavior                           | Reason                                       |
+| ----------------- | ----------------------------------------------- | -------------------------------------------- |
+| Buffered files    | `Uint8Array` and `Blob`, capped at 16 MiB       | Bounded JavaScript heap usage                |
+| Expo picker files | Native `FormData` with `file://`/`content://`   | Avoids buffering large files in JavaScript   |
+| URI content type  | Native stack owns the multipart boundary header | React Native's supported URI upload path     |
+| Byte multipart    | Exact Swift/Kotlin CRLF framing and escaping    | Shared wire fixture compatibility            |
+| Nested resolution | Sequential, one upload per local occurrence     | Deterministic order; no hidden deduplication |
+| Remote URLs       | Converted directly to URL strings               | No unnecessary upload                        |
+| Upload retries    | Never retried                                   | Prevents duplicate side effects              |
+| Temporary files   | None created by the SDK                         | No cleanup dependency or filesystem module   |
+| Cancellation      | Native `AbortError` is preserved                | Expo and React Native async convention       |
+| Content source    | Injectable, with Expo-native default            | Platform-neutral core tests                  |
+
+Native URI uploads intentionally omit a caller-supplied `Content-Type` header;
+React Native adds the correct multipart boundary. Buffered uploads set the
+boundary explicitly and match the Swift/Kotlin golden bytes. All file parts
+use field name `file` and `application/octet-stream`.

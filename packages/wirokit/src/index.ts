@@ -7,6 +7,8 @@ export {
   type WiroProxyClientOptions,
   type WiroRunModelOptions,
   type WiroSearchModelsOptions,
+  type WiroUploadFromUriOptions,
+  type WiroUploadOptions,
 } from './client/wiro-client';
 export { WiroAuthType, WiroClientDefaults } from './config/auth';
 export {
@@ -59,6 +61,15 @@ export {
   WiroValidationError,
   WiroWebSocketError,
 } from './errors/wiro-error';
+export {
+  ExpoWiroFileContentSource,
+  WiroBytesFileContent,
+  WiroExpoUriFileContent,
+  type WiroFileContent,
+  type WiroFileContentSource,
+  type WiroFileContentSourceReadOptions,
+  type WiroReadableFileInput,
+} from './files/file-content-source';
 export {
   compareWiroLogLevels,
   noopWiroLogger,
@@ -124,6 +135,12 @@ export {
 } from './models/task-progress';
 export { WiroTaskStatus, type WiroTaskStatusKind } from './models/task-status';
 export {
+  WiroUploadedFile,
+  type WiroUploadedFileOptions,
+  WiroUploadResult,
+  type WiroUploadResultOptions,
+} from './models/upload-result';
+export {
   Wiro,
   WiroDynamicRequest,
   type WiroModelRequest,
@@ -131,6 +148,7 @@ export {
 export {
   FetchWiroHttpTransport,
   type FetchWiroHttpTransportOptions,
+  type WiroHttpBody,
   WiroHttpRequest,
   type WiroHttpRequestOptions,
   WiroHttpResponse,

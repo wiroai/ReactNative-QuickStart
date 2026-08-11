@@ -1,9 +1,11 @@
 import {
   WIROKIT_VERSION,
+  WiroBytesFileContent,
   Wiro,
   WiroClient,
   WiroFileInput,
   type WiroFileInput as WiroFileInputType,
+  type WiroFileContentSource,
   WiroKitInfo,
   type WiroModel,
   WiroModelId,
@@ -17,6 +19,7 @@ import {
   WiroHttpResponse,
   type WiroHttpTransport,
   WiroValidationError,
+  type WiroUploadResult,
   WiroValue,
   type WiroValue as WiroValueType,
 } from '@wiro-ai/wirokit-react-native';
@@ -50,6 +53,18 @@ const request = Wiro.model('owner/project', {
 const run: Promise<WiroRunResult> = client.run(request);
 const task: Promise<WiroTask> = client.getTaskById(new WiroTaskId('task-id'));
 const terminal: boolean = WiroTaskStatus.completed.isTerminal;
+const contentSource: WiroFileContentSource = {
+  async read(input) {
+    return new WiroBytesFileContent(
+      new Uint8Array(),
+      input.fileName ?? 'upload.bin',
+    );
+  },
+};
+const upload: Promise<WiroUploadResult> = client.uploadFileFromUri(
+  'file:///image.png',
+  { contentSource, fileName: 'image.png' },
+);
 
 void version;
 void infoVersion;
@@ -63,3 +78,4 @@ void request;
 void run;
 void task;
 void terminal;
+void upload;

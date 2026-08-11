@@ -6,8 +6,12 @@ import {
 import { createAbortError, isAbortError } from '../internal/runtime';
 import { utf8ByteLength } from '../internal/utf8';
 
+export type WiroHttpBody = string | Uint8Array | Blob | FormData;
+
 export interface WiroHttpRequestOptions {
+  readonly binaryBody?: Uint8Array | Blob;
   readonly body?: string;
+  readonly formDataBody?: FormData;
   readonly headers?: Readonly<Record<string, string>>;
   readonly maxResponseBodyBytes: number;
   readonly method: 'POST';
@@ -24,9 +28,26 @@ export class WiroHttpRequest {
   readonly signal: AbortSignal | undefined;
   readonly timeoutMs: number;
   readonly url: string;
+  readonly #binaryBody: Uint8Array | Blob | undefined;
+  readonly #formDataBody: FormData | undefined;
 
   constructor(options: WiroHttpRequestOptions) {
+    const bodyCount = [
+      options.body,
+      options.binaryBody,
+      options.formDataBody,
+    ].filter((body) => body !== undefined).length;
+    if (bodyCount > 1) {
+      throw new WiroValidationError(
+        'HTTP request cannot contain multiple body types.',
+      );
+    }
+    this.#binaryBody =
+      options.binaryBody instanceof Uint8Array
+        ? new Uint8Array(options.binaryBody)
+        : options.binaryBody;
     this.body = options.body;
+    this.#formDataBody = options.formDataBody;
     this.headers = immutableHeaders(options.headers ?? {});
     this.maxResponseBodyBytes = options.maxResponseBodyBytes;
     this.method = options.method;
@@ -34,6 +55,16 @@ export class WiroHttpRequest {
     this.timeoutMs = options.timeoutMs;
     this.url = options.url;
     Object.freeze(this);
+  }
+
+  get binaryBody(): Uint8Array | Blob | undefined {
+    return this.#binaryBody instanceof Uint8Array
+      ? new Uint8Array(this.#binaryBody)
+      : this.#binaryBody;
+  }
+
+  get formDataBody(): FormData | undefined {
+    return this.#formDataBody;
   }
 }
 
@@ -102,8 +133,10 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
     this.#inFlight.add(controller);
 
     try {
+      const requestBody =
+        request.formDataBody ?? request.binaryBody ?? request.body;
       const response = await this.#fetch(request.url, {
-        ...(request.body === undefined ? {} : { body: request.body }),
+        ...(requestBody === undefined ? {} : { body: requestBody as BodyInit }),
         headers: request.headers,
         method: request.method,
         signal: controller.signal,
@@ -118,8 +151,8 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
         );
       }
 
-      const body = await response.text();
-      if (utf8ByteLength(body) > request.maxResponseBodyBytes) {
+      const responseBody = await response.text();
+      if (utf8ByteLength(responseBody) > request.maxResponseBodyBytes) {
         throw new WiroValidationError(
           'Response body exceeds the configured REST payload limit.',
         );
@@ -130,7 +163,7 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
         headers[name] = value;
       });
       return new WiroHttpResponse({
-        body,
+        body: responseBody,
         headers,
         statusCode: response.status,
       });
