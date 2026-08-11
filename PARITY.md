@@ -125,3 +125,24 @@ emit that detail as a final update. React Native follows Kotlin hardening and
 emits `WiroTaskSnapshotUpdate` last. Socket timeouts and aborts never fall back;
 protocol errors and early closure may recover without starting another model
 run.
+
+## Step 9 — Typed model requests
+
+| Area                | React Native behavior                              | Parity basis                          |
+| ------------------- | -------------------------------------------------- | ------------------------------------- |
+| Factory namespace   | `Wiro` static factory object                       | Swift/Kotlin discoverability          |
+| Factory arguments   | Strict TypeScript options objects                  | Idiomatic named-argument equivalent   |
+| Typed catalog       | 13 typed factories plus dynamic `model`            | Swift/Kotlin golden catalog           |
+| Enum representation | Frozen string-valued objects and literal unions    | Exact provider wire values            |
+| Optional values     | `undefined` omits the wire key                     | Kotlin null / Swift optional omission |
+| Empty file arrays   | Encoded as empty arrays                            | Reference wire behavior               |
+| Local file inputs   | Preserved until Expo upload resolution             | Step 6 integration                    |
+| Numeric safety      | Requires safe integers for integer provider fields | Kotlin/Swift integer type equivalent  |
+| Runway seed         | Enforces `0...4294967295`                          | Swift documented/provider range       |
+| Upscaler            | No `google/upscaler` typed factory                 | Explicit port exclusion               |
+
+Provider-specific string booleans, string integers, Kling `on`/`off`, file
+key remapping, Kling's always-present `multiPrompt`, and Hailuo's singular
+input-to-array encoding match the shared golden fixtures. The TypeScript
+options-object shape is the only API-style difference from Swift and Kotlin
+named parameters.

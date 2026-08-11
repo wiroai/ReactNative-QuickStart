@@ -1,0 +1,7 @@
+{
+  "prompt": "A fox",
+  "inputImage": ["https://example.com/in.png"],
+  "aspectRatio": "21:9",
+  "resolution": "2K",
+  "safetySetting": "BLOCK_ONLY_HIGH"
+}

@@ -6,6 +6,12 @@ import {
   WiroFileInput,
   type WiroFileInput as WiroFileInputType,
   type WiroFileContentSource,
+  WiroFlux2ProOutputFormat,
+  type WiroFlux2ProRequest,
+  type WiroFlux2ProRequestOptions,
+  WiroGptImage2Quality,
+  WiroGptImage2Ratio,
+  WiroGptImage2Resolution,
   WiroKitInfo,
   type WiroModel,
   WiroModelId,
@@ -56,6 +62,18 @@ const schema: Promise<WiroModelSchema> = client.getModelSchema(modelId);
 const request = Wiro.model('owner/project', {
   prompt: WiroValue.string('hello'),
 });
+const typedOptions: WiroFlux2ProRequestOptions = {
+  outputFormat: WiroFlux2ProOutputFormat.png,
+  prompt: 'hello',
+};
+const typedRequest: WiroFlux2ProRequest = Wiro.flux2Pro(typedOptions);
+const gptRequest = Wiro.gptImage2({
+  prompt: 'hello',
+  quality: WiroGptImage2Quality.high,
+  ratio: WiroGptImage2Ratio.square,
+  resolution: WiroGptImage2Resolution.r1k,
+  samples: 1,
+});
 const run: Promise<WiroRunResult> = client.run(request);
 const task: Promise<WiroTask> = client.getTaskById(new WiroTaskId('task-id'));
 const terminal: boolean = WiroTaskStatus.completed.isTerminal;
@@ -104,6 +122,9 @@ void client;
 void models;
 void schema;
 void request;
+void typedOptions;
+void typedRequest;
+void gptRequest;
 void run;
 void task;
 void terminal;

@@ -1,0 +1,9 @@
+{
+  "prompt": "A mountain",
+  "inputImage": ["https://example.com/in.png"],
+  "width": 1024,
+  "height": 768,
+  "safetyTolerance": 2,
+  "seed": 42,
+  "outputFormat": "png"
+}

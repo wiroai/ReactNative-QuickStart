@@ -8,6 +8,9 @@ import {
   FetchWiroHttpTransport,
   Wiro,
   WiroClient,
+  WiroFlux2ProOutputFormat,
+  WiroFlux2ProRequest,
+  WiroGptImage2Resolution,
   WiroKitInfo as importedInfo,
   WiroModelId,
   WiroModelSchema,
@@ -42,6 +45,22 @@ assert.equal(WiroModelSort.ratedUserCount, 'ratedusercount');
 assert.equal(typeof WiroModelSchema.parse, 'function');
 assert.equal(typeof WiroPaginatedResult.parse, 'function');
 assert.equal(Wiro.model('owner/project', {}).model.slug, 'owner/project');
+assert.equal(typeof Wiro.flux2Pro, 'function');
+assert.equal(typeof Wiro.gptImage2, 'function');
+assert.equal(typeof Wiro.nanoBananaPro, 'function');
+assert.equal(typeof Wiro.seedreamV4, 'function');
+assert.equal(typeof Wiro.grokImagineImage, 'function');
+assert.equal(typeof Wiro.runwayGen45, 'function');
+assert.equal(typeof Wiro.seedance20, 'function');
+assert.equal(typeof Wiro.klingV3, 'function');
+assert.equal(typeof Wiro.veo31, 'function');
+assert.equal(typeof Wiro.sora2Pro, 'function');
+assert.equal(typeof Wiro.hailuo23Fast, 'function');
+assert.equal(typeof Wiro.grokImagineVideo, 'function');
+assert.equal(typeof Wiro.lyria3, 'function');
+assert.equal(typeof WiroFlux2ProRequest, 'function');
+assert.equal(WiroFlux2ProOutputFormat.png, 'png');
+assert.equal(WiroGptImage2Resolution.r4k, '4k');
 assert.equal(WiroTaskStatus.completed.isTerminal, true);
 assert.equal(typeof WiroTask.parse, 'function');
 assert.equal(WiroTaskTrackingMode.polling, 'polling');
@@ -62,4 +81,6 @@ assert.equal(typeof requiredSdk.WiroModelSchema, 'function');
 assert.equal(typeof requiredSdk.WiroTask, 'function');
 assert.equal(requiredSdk.WiroTaskTrackingMode.webSocket, 'webSocket');
 assert.equal(typeof requiredSdk.WiroUploadResult, 'function');
+assert.equal(typeof requiredSdk.WiroFlux2ProRequest, 'function');
+assert.equal(requiredSdk.WiroKlingV3Mode.ultra4k, '4k');
 assert.equal(typeof requiredSdk.ExpoWiroSocketSessionFactory, 'function');

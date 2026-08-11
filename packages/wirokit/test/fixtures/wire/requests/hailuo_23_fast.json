@@ -1,0 +1,7 @@
+{
+  "inputImage": ["https://example.com/in.png"],
+  "duration": "6",
+  "prompt": "zoom",
+  "promptOptimizer": "true",
+  "resolution": "768P"
+}

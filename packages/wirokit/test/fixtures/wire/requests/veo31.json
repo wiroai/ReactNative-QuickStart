@@ -1,0 +1,11 @@
+{
+  "durationSeconds": "4",
+  "prompt": "ocean",
+  "inputImage": ["https://example.com/in.png"],
+  "inputImage2": ["https://example.com/in.png"],
+  "inputImage3": ["https://example.com/in.png"],
+  "aspectRatio": "16:9",
+  "resolution": "720p",
+  "negativePrompt": "blur",
+  "seed": 3
+}

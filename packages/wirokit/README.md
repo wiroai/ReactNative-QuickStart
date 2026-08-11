@@ -16,6 +16,7 @@ import {
   Wiro,
   WiroClient,
   WiroFileInput,
+  WiroFlux2ProOutputFormat,
   WiroKitInfo,
   WiroModelId,
   WiroModelSort,
@@ -53,8 +54,9 @@ const schema = await proxyClient.getModelSchema(
 console.log(models.total, schema.parameters);
 
 const run = await proxyClient.run(
-  Wiro.model('owner/project', {
-    prompt: WiroValue.string('A mountain lake'),
+  Wiro.flux2Pro({
+    outputFormat: WiroFlux2ProOutputFormat.png,
+    prompt: 'A mountain lake',
   }),
   { callbackUrl: 'https://example.com/wiro/callback' },
 );
@@ -110,9 +112,9 @@ configuration, limits, logging, typed errors, and the injectable `fetch`
 transport are available. Authenticated requests support API-key, signature,
 and proxy modes. Model search, explore, schema decoding, forward-compatible
 parameter kinds, and schema validation are included. Production mobile apps
-should prefer proxy mode instead of embedding long-lived API secrets. Dynamic
-model runs and task detail, cancel, and kill operations use typed identifiers
-and preserve unknown task statuses for forward compatibility. Multipart
+should prefer proxy mode instead of embedding long-lived API secrets. Typed
+and dynamic model runs plus task detail, cancel, and kill operations use typed
+identifiers and preserve unknown task statuses for forward compatibility. Multipart
 uploads support `Uint8Array`, `Blob`, remote URL, and Expo picker URI inputs.
 Nested file inputs are uploaded before `/Run` and replaced with hosted URL
 strings.
@@ -121,6 +123,23 @@ This package does not use custom native modules and does not depend on React UI
 or Expo UI packages. HMAC-SHA256 uses the audited, zero-dependency
 `@noble/hashes` JavaScript implementation and does not require native crypto or
 random-number APIs.
+
+## Typed model requests
+
+`Wiro` provides validated factories for `flux2Pro`, `gptImage2`,
+`nanoBananaPro`, `seedreamV4`, `grokImagineImage`, `runwayGen45`,
+`seedance20`, `klingV3`, `veo31`, `sora2Pro`, `hailuo23Fast`,
+`grokImagineVideo`, and `lyria3`. Factories validate ranges and conditional
+rules before networking, preserve provider-specific enum values, and omit
+unset optional fields.
+
+Use `Wiro.model(slug, parameters)` as the dynamic escape hatch for other
+catalog models. `google/upscaler` is intentionally not exposed as a typed
+factory.
+
+For live provider checks, use `auto` for prompt-only Runway Gen 4.5 requests.
+Hailuo image-to-video checks require a realistic image around 768×768; a 1×1
+placeholder is not representative.
 
 ## Uploads on Expo
 

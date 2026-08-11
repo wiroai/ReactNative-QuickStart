@@ -1,0 +1,13 @@
+{
+  "prompt": "A mug",
+  "resolution": "1k",
+  "ratio": "1:1",
+  "quality": "low",
+  "samples": 2,
+  "inputImage": ["https://example.com/in.png"],
+  "inputImageMask": ["https://example.com/mask.png"],
+  "background": "opaque",
+  "outputFormat": "webp",
+  "outputCompression": 80,
+  "moderation": "low"
+}

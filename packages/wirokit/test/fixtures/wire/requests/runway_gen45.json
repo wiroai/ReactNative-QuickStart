@@ -1,0 +1,8 @@
+{
+  "prompt": "A drone shot",
+  "ratio": "16:9",
+  "duration": 5,
+  "inputImage": ["https://example.com/in.png"],
+  "contentModeration": "low",
+  "seed": 7
+}

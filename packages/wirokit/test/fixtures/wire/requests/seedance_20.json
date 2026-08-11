@@ -1,0 +1,10 @@
+{
+  "resolution": "480p",
+  "ratio": "adaptive",
+  "duration": "4",
+  "generateAudio": "false",
+  "prompt": "A time-lapse",
+  "promptEnhancement": "true",
+  "watermark": "false",
+  "seed": 1
+}
