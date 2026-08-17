@@ -112,6 +112,13 @@ const upload: Promise<WiroUploadResult> = client.uploadFileFromUri(
   'file:///image.png',
   { contentSource, fileName: 'image.png' },
 );
+const streamUpload: Promise<WiroUploadResult> = client.uploadStream(
+  (async function* (): AsyncGenerator<Uint8Array> {
+    yield new Uint8Array([1, 2, 3]);
+  })(),
+  'stream.bin',
+  { contentLength: 3 },
+);
 
 void version;
 void infoVersion;
@@ -134,3 +141,4 @@ void subscriptionStream;
 void socketWatch;
 void socketFactory;
 void upload;
+void streamUpload;

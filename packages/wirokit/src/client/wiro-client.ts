@@ -62,6 +62,10 @@ import {
 } from '../internal/runtime';
 import { redactSensitiveText } from '../internal/redaction';
 import { createWiroSignature } from '../internal/signature';
+import {
+  type WiroByteStream,
+  readExactByteStream,
+} from '../internal/byte-stream';
 import { encodeUtf8, utf8ByteLength } from '../internal/utf8';
 import {
   requirePositiveDuration,
@@ -174,6 +178,12 @@ export interface WiroUploadFromUriOptions extends WiroUploadOptions {
   readonly fileName?: string;
   readonly mediaType?: string;
   readonly sizeBytes?: number;
+}
+
+export type { WiroByteStream } from '../internal/byte-stream';
+
+export interface WiroUploadStreamOptions extends WiroUploadOptions {
+  readonly contentLength: number;
 }
 
 export interface WiroWatchTaskOptions extends WiroDiscoveryRequestOptions {
@@ -379,6 +389,34 @@ export class WiroClient {
         ? new WiroBytesFileInput(data, fileName)
         : new WiroBlobFileInput(data, fileName);
     return this.uploadFileInput(input, options);
+  }
+
+  async uploadStream(
+    stream: WiroByteStream,
+    fileName: string,
+    options: WiroUploadStreamOptions,
+  ): Promise<WiroUploadResult> {
+    const state = getState(this);
+    ensureOpen(state);
+    throwIfAborted(options.signal);
+    validateFileName(fileName);
+    if (
+      !Number.isSafeInteger(options.contentLength) ||
+      options.contentLength < 0
+    ) {
+      throw new WiroValidationError('contentLength cannot be negative.');
+    }
+    if (options.contentLength > this.limits.maxInMemoryUploadBytes) {
+      throw new WiroValidationError(
+        'In-memory upload exceeds the configured size limit.',
+      );
+    }
+    const bytes = await readExactByteStream(
+      stream,
+      options.contentLength,
+      options.signal,
+    );
+    return this.uploadFile(bytes, fileName, options);
   }
 
   async uploadFileFromUri(

@@ -67,6 +67,7 @@ assert.equal(WiroTaskTrackingMode.polling, 'polling');
 assert.equal(typeof WiroTaskUpdate.snapshot, 'function');
 assert.equal(WiroTracking.defaultTimeoutMs, 600_000);
 assert.equal(typeof WiroUploadResult.parse, 'function');
+assert.equal(typeof client.uploadStream, 'function');
 assert.equal(typeof ExpoWiroFileContentSource, 'function');
 assert.equal(typeof ExpoWiroSocketSessionFactory, 'function');
 assert.equal(typeof WiroSocketEvent.message, 'function');

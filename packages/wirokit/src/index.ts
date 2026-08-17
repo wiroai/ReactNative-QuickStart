@@ -21,8 +21,10 @@ export {
   type WiroSearchModelsOptions,
   type WiroSubscribeOptions,
   type WiroSubscribeStreamOptions,
+  type WiroByteStream,
   type WiroUploadFromUriOptions,
   type WiroUploadOptions,
+  type WiroUploadStreamOptions,
   type WiroWatchTaskOptions,
 } from './client/wiro-client';
 export { WiroAuthType, WiroClientDefaults } from './config/auth';

@@ -11,12 +11,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yasinertekinwiro/React-Native-QuickStart.git",
+    "url": "git+https://github.com/wiroai/ReactNative-QuickStart.git",
     "directory": "packages/wirokit"
   },
-  "homepage": "https://github.com/yasinertekinwiro/React-Native-QuickStart#readme",
+  "homepage": "https://github.com/wiroai/ReactNative-QuickStart#readme",
   "bugs": {
-    "url": "https://github.com/yasinertekinwiro/React-Native-QuickStart/issues"
+    "url": "https://github.com/wiroai/ReactNative-QuickStart/issues"
   },
   "type": "module",
   "main": "./dist/index.cjs",

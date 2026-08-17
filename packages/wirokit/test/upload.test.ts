@@ -106,6 +106,56 @@ describe('WiroClient uploads', () => {
     expect(transport.requests).toHaveLength(0);
   });
 
+  it('uploads an async byte stream of the declared length', async () => {
+    const transport = new FakeHttpTransport();
+    transport.enqueueJson(
+      200,
+      uploadResponse('https://cdn.wiro.ai/stream.bin'),
+    );
+
+    const result = await client(transport).uploadStream(
+      chunks([0x89], [0x50, 0x4e], [0x47]),
+      'stream.bin',
+      { contentLength: 4 },
+    );
+
+    expect(result.files[0]?.url?.pathname).toBe('/stream.bin');
+    expect(asAscii(transport.requests[0]?.binaryBody)).toContain(
+      'filename="stream.bin"',
+    );
+    expect(asAscii(transport.requests[0]?.binaryBody)).toContain('\u0089PNG');
+  });
+
+  it('never retries stream upload failures', async () => {
+    const transport = new FakeHttpTransport();
+    transport.enqueueJson(503, '{"message":"busy"}');
+    transport.enqueueJson(
+      200,
+      uploadResponse('https://cdn.wiro.ai/unexpected'),
+    );
+
+    await expect(
+      client(transport, {
+        retryPolicy: WiroRetryPolicy.default,
+      }).uploadStream(chunks([1, 2, 3]), 'file.bin', { contentLength: 3 }),
+    ).rejects.toMatchObject({ statusCode: 503 });
+    expect(transport.requests).toHaveLength(1);
+  });
+
+  it('rejects an oversize stream before transport', async () => {
+    const transport = new FakeHttpTransport();
+    const sdk = client(transport, {
+      limits: new WiroClientLimits({
+        maxInMemoryUploadBytes: 2,
+      }),
+    });
+
+    await expect(
+      sdk.uploadStream(chunks([1, 2, 3]), 'file.bin', { contentLength: 3 }),
+    ).rejects.toThrow('In-memory upload exceeds the configured size limit.');
+    expect(transport.requests).toHaveLength(0);
+  });
+
   it('uploads Blob inputs through the bounded content source', async () => {
     const transport = new FakeHttpTransport();
     transport.enqueueJson(200, uploadResponse('https://cdn.wiro.ai/blob.bin'));
@@ -431,4 +481,12 @@ function uploadResponse(url: string): string {
 
 function asAscii(body: string | Uint8Array | Blob | undefined): string {
   return body instanceof Uint8Array ? String.fromCharCode(...body) : '';
+}
+
+async function* chunks(
+  ...values: readonly number[][]
+): AsyncGenerator<Uint8Array> {
+  for (const value of values) {
+    yield new Uint8Array(value);
+  }
 }

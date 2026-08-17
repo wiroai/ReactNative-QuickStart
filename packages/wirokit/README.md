@@ -143,19 +143,21 @@ placeholder is not representative.
 
 ## Uploads on Expo
 
-Use `uploadFile(bytesOrBlob, fileName)` for buffered data and
-`uploadFileFromUri(uri, options)` for an Expo picker URI. URI inputs use React
-Native's native `FormData` integration: the native networking stack reads
-`file://` or `content://` content and generates the multipart boundary. The SDK
-does not copy URI file bytes into the JavaScript heap and does not create
-temporary files, so there are no SDK temporary resources to clean up after
-success, error, timeout, or abort.
+Use `uploadFile(bytesOrBlob, fileName)` for buffered data,
+`uploadStream(stream, fileName, { contentLength })` for chunked bytes, and
+`uploadFileFromUri(uri, options)` for an Expo picker URI. Stream uploads
+require the exact byte length and concatenate chunks in JavaScript. URI inputs
+use React Native's native `FormData` integration: the native networking stack
+reads `file://` or `content://` content and generates the multipart boundary.
+The SDK does not copy URI file bytes into the JavaScript heap and does not
+create temporary files, so there are no SDK temporary resources to clean up
+after success, error, timeout, or abort.
 
-Buffered `Uint8Array` and `Blob` uploads are assembled in JavaScript and are
-limited by `WiroClientLimits.maxInMemoryUploadBytes` (16 MiB by default).
-Prefer picker URIs for large mobile files. Upload requests use field `file`,
-part type `application/octet-stream`, never use the JSON content type, and are
-never retried automatically. Upload progress callbacks are not currently
+Buffered `Uint8Array`, `Blob`, and stream uploads are assembled in JavaScript
+and are limited by `WiroClientLimits.maxInMemoryUploadBytes` (16 MiB by
+default). Prefer picker URIs for large mobile files. Upload requests use field
+`file`, part type `application/octet-stream`, never use the JSON content type,
+and are never retried automatically. Upload progress callbacks are not currently
 available. Pass an `AbortSignal` to cancel.
 
 `WiroFileContentSource` is injectable through the client constructor,
