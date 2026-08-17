@@ -1,0 +1,62 @@
+{
+  "name": "@wiro-ai/wirokit-react-native",
+  "version": "0.1.0",
+  "description": "Pure TypeScript Wiro SDK for React Native",
+  "keywords": [
+    "wiro",
+    "react-native",
+    "expo",
+    "sdk"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wiroai/ReactNative-QuickStart.git",
+    "directory": "packages/wirokit"
+  },
+  "homepage": "https://github.com/wiroai/ReactNative-QuickStart#readme",
+  "bugs": {
+    "url": "https://github.com/wiroai/ReactNative-QuickStart/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "react-native": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "react-native": "./dist/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "verify:exports": "node scripts/verify-exports.mjs && tsc -p tsconfig.exports.json",
+    "verify:hmac:hermes": "node scripts/verify-hmac-hermes.mjs"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.76.0"
+  },
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.3.0"
+  }
+}

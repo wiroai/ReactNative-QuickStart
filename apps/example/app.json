@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "WiroKit Example",
+    "slug": "wirokit-react-native-example",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "ai.wiro.wirokit.example",
+      "supportsTablet": true
+    },
+    "android": {
+      "edgeToEdgeEnabled": true,
+      "package": "ai.wiro.wirokit.example",
+      "predictiveBackGestureEnabled": false
+    }
+  }
+}

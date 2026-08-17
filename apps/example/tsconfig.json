@@ -1,0 +1,12 @@
+{
+  "extends": ["expo/tsconfig.base", "../../tsconfig.base.json"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "paths": {
+      "@wiro-ai/wirokit-react-native": ["../../packages/wirokit/src/index.ts"]
+    },
+    "types": ["jest", "react", "react-native"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}

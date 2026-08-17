@@ -1,0 +1,35 @@
+{
+  "name": "wirokit-react-native-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WiroKit React Native SDK and Expo example workspace",
+  "license": "MIT",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "scripts": {
+    "build": "corepack pnpm --filter @wiro-ai/wirokit-react-native build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "corepack pnpm -r --if-present typecheck",
+    "test": "corepack pnpm -r --if-present test",
+    "test:coverage": "corepack pnpm --filter @wiro-ai/wirokit-react-native test:coverage",
+    "pack:dry-run": "corepack pnpm --filter @wiro-ai/wirokit-react-native pack --dry-run",
+    "verify:exports": "corepack pnpm --filter @wiro-ai/wirokit-react-native verify:exports",
+    "expo:config": "corepack pnpm --filter @wiro-ai/example expo:config",
+    "expo:export:ios": "corepack pnpm --filter @wiro-ai/example expo:export:ios",
+    "expo:export:android": "corepack pnpm --filter @wiro-ai/example expo:export:android"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "9.39.5",
+    "eslint-config-expo": "10.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.6",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
