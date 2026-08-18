@@ -4,6 +4,7 @@ import {
   FetchWiroHttpTransport,
   WiroHttpRequest,
   WiroNetworkError,
+  WiroTimeoutError,
   WiroValidationError,
 } from '../src';
 
@@ -118,6 +119,30 @@ describe('FetchWiroHttpTransport', () => {
     ).rejects.toBe(abortError);
   });
 
+  it('enforces request timeouts when used directly', async () => {
+    vi.useFakeTimers();
+    const fetchImplementation = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true },
+          );
+        }),
+    );
+    const transport = new FetchWiroHttpTransport({
+      fetchImplementation,
+    });
+    const pending = transport.perform(request({ timeoutMs: 10 }));
+    const rejection = expect(pending).rejects.toBeInstanceOf(WiroTimeoutError);
+
+    await vi.advanceTimersByTimeAsync(10);
+
+    await rejection;
+    vi.useRealTimers();
+  });
+
   it('aborts in-flight work when disposed', async () => {
     const fetchImplementation = vi.fn<typeof fetch>(
       async (_input, init) =>
@@ -176,5 +201,6 @@ describe('FetchWiroHttpTransport', () => {
     expect(() => new FetchWiroHttpTransport()).toThrow(
       'A fetch implementation is required.',
     );
+    expect(() => request({ timeoutMs: 0 })).toThrow(WiroValidationError);
   });
 });

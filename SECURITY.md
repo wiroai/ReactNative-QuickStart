@@ -28,3 +28,7 @@ mobile applications. Use a trusted backend or `WiroClient` proxy mode.
 
 Prefer redacted snapshots (`JSON.stringify(task)`, `WiroLogEvent`) over raw
 tokens, URI inputs, and response bodies in application logs.
+
+Diagnostic fields such as `task.raw`, `result.raw`, token `rawValue` values,
+and `error.rawResponseBody` may contain sensitive API data. Do not send these
+fields to logs, crash reports, or analytics systems.

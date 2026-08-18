@@ -102,9 +102,7 @@ export default function App() {
       if (result instanceof WiroTaskFailure) {
         setState({
           kind: 'failure',
-          message:
-            result.task.debugOutput ??
-            `Image generation failed (${result.reason}).`,
+          message: `Image generation failed (${result.reason}).`,
         });
         return;
       }
@@ -132,7 +130,10 @@ export default function App() {
       }
       setState({
         kind: 'failure',
-        message: error instanceof WiroError ? error.message : String(error),
+        message:
+          error instanceof WiroError
+            ? `Wiro request failed (${error.code}).`
+            : 'Image generation failed.',
       });
     } finally {
       if (abortRef.current === controller) {

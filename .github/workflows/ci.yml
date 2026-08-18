@@ -17,25 +17,25 @@ jobs:
   quality:
     name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         node:
-          - 20.19.4
+          - 22.18.0
+          - 24
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ matrix.node }}
 
       - name: Enable Corepack
         run: corepack enable
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          cache: pnpm
-          node-version: ${{ matrix.node }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -49,6 +49,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Build package
+        run: pnpm build
+
       - name: Test
         run: pnpm test
 
@@ -58,5 +61,22 @@ jobs:
       - name: Verify exports
         run: pnpm verify:exports
 
+      - name: Verify Hermes HMAC
+        if: matrix.node == '22.18.0'
+        run: pnpm verify:hmac:hermes
+
+      - name: Verify Expo configuration
+        if: matrix.node == '22.18.0'
+        run: pnpm expo:config
+
+      - name: Export Expo iOS bundle
+        if: matrix.node == '22.18.0'
+        run: pnpm expo:export:ios
+
+      - name: Export Expo Android bundle
+        if: matrix.node == '22.18.0'
+        run: pnpm expo:export:android
+
       - name: Pack dry-run
+        if: matrix.node == '22.18.0'
         run: pnpm pack:dry-run

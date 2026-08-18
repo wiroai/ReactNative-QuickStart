@@ -5,8 +5,20 @@ Type-safe Wiro SDK for React Native and Expo Go on iOS and Android.
 ## Installation
 
 ```sh
+npm install @wiro-ai/wirokit-react-native
+```
+
+```sh
+yarn add @wiro-ai/wirokit-react-native
+```
+
+```sh
 pnpm add @wiro-ai/wirokit-react-native
 ```
+
+The package is pure TypeScript and requires no autolinking, CocoaPods,
+Gradle, TurboModule, Fabric, or codegen configuration. The same package works
+in Expo Go and bare React Native applications.
 
 ## Quick start
 
@@ -72,6 +84,15 @@ const client = new WiroClient({
 });
 ```
 
+`baseUrl` and `proxyUrl` require HTTPS, and `socketUrl` requires WSS.
+Insecure HTTP and WebSocket URLs are accepted only for loopback hosts such as
+`localhost`, which supports local development.
+
+Do not log `task.raw`, `result.raw`, token `rawValue` fields, or
+`error.rawResponseBody`; those diagnostic surfaces can contain API data.
+Serialize model objects with `JSON.stringify(...)` to use their redacted
+representations.
+
 ## Typed model requests
 
 Use the `Wiro` factories for compile-time checked request parameters:
@@ -114,7 +135,7 @@ Typed factories are available for:
 Models without a typed factory can be called with `Wiro.model`:
 
 ```ts
-const request = Wiro.model('owner/model', {
+const request = Wiro.model('owner/project', {
   prompt: WiroValue.string('A cinematic mountain lake'),
 });
 
@@ -129,7 +150,7 @@ const models = await client.searchModels({
   sort: WiroModelSort.relevance,
 });
 
-const schema = await client.getModelSchema(new WiroModelId('owner', 'model'));
+const schema = await client.getModelSchema(new WiroModelId('owner', 'project'));
 
 console.log(models.total, schema.parameters);
 ```
@@ -146,7 +167,7 @@ const image = WiroFileInput.uri(pickerAsset.uri, {
 });
 
 const result = await client.subscribe(
-  Wiro.model('owner/model', {
+  Wiro.model('owner/project', {
     image: WiroValue.fileInput(image),
   }),
 );
@@ -194,18 +215,28 @@ for await (const update of updates) {
 }
 ```
 
+## Low-level requests
+
+`client.postJson(path, body, options)` is available for Wiro endpoints that do
+not yet have a dedicated method. The path must be relative to the configured
+base URL and must not contain a query string or fragment. Prefer the typed
+client methods and `Wiro` request factories whenever possible.
+
 ## Cancellation
 
 Every asynchronous operation accepts an `AbortSignal`:
 
 ```ts
 const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 5_000);
 
-const result = await client.subscribe(request, {
-  signal: controller.signal,
-});
-
-controller.abort();
+try {
+  const result = await client.subscribe(request, {
+    signal: controller.signal,
+  });
+} finally {
+  clearTimeout(timeout);
+}
 ```
 
 Call `client.close()` when the client is no longer needed. Closing the client
@@ -214,4 +245,4 @@ aborts its in-flight work.
 ## Requirements
 
 - React Native 0.76 or newer
-- Node.js 20.19.4 or newer for development
+- Node.js 22.14.0 or newer for development

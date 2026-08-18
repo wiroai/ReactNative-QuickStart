@@ -41,6 +41,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
+    "prepack": "corepack pnpm build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -50,11 +51,9 @@
   "peerDependencies": {
     "react-native": ">=0.76.0"
   },
-  "engines": {
-    "node": ">=20.19.4"
-  },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "dependencies": {
     "@noble/hashes": "^2.3.0"

@@ -30,8 +30,9 @@ import {
 
 const require = createRequire(import.meta.url);
 const requiredSdk = require('@wiro-ai/wirokit-react-native');
+const packageJson = require('../package.json');
 
-assert.equal(importedVersion, '0.1.0');
+assert.equal(importedVersion, packageJson.version);
 assert.equal(importedInfo.version, importedVersion);
 assert.equal(requiredSdk.WIROKIT_VERSION, importedVersion);
 assert.equal(requiredSdk.WiroKitInfo.version, importedVersion);
@@ -87,6 +88,7 @@ assert.equal(requiredSdk.WiroKlingV3Mode.ultra4k, '4k');
 assert.equal(typeof requiredSdk.ExpoWiroSocketSessionFactory, 'function');
 
 const deniedExports = [
+  'createWiroClientForTests',
   'decodeSocketFrame',
   'WiroSocketFrameLimits',
   'createRuntimeDependencies',

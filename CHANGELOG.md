@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 0.1.0 - Unreleased
 
 - Add the typed Wiro client for React Native and Expo Go.
 - Cover discovery, run, subscribe, polling, WebSocket tracking, and uploads.

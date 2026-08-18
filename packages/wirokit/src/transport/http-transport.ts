@@ -1,10 +1,12 @@
 import {
   WiroError,
   WiroNetworkError,
+  WiroTimeoutError,
   WiroValidationError,
 } from '../errors/wiro-error';
 import { createAbortError, isAbortError } from '../internal/runtime';
 import { utf8ByteLength } from '../internal/utf8';
+import { requirePositiveDuration } from '../internal/validation';
 
 export type WiroHttpBody = string | Uint8Array | Blob | FormData;
 
@@ -52,7 +54,7 @@ export class WiroHttpRequest {
     this.maxResponseBodyBytes = options.maxResponseBodyBytes;
     this.method = options.method;
     this.signal = options.signal;
-    this.timeoutMs = options.timeoutMs;
+    this.timeoutMs = requirePositiveDuration(options.timeoutMs, 'timeout');
     this.url = options.url;
     Object.freeze(this);
   }
@@ -131,6 +133,13 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
       once: true,
     });
     this.#inFlight.add(controller);
+    const timeoutError = new WiroTimeoutError(
+      `The network request timed out after ${request.timeoutMs} ms.`,
+      request.timeoutMs,
+    );
+    const timeout = setTimeout(() => {
+      controller.abort(timeoutError);
+    }, request.timeoutMs);
 
     try {
       const requestBody =
@@ -178,6 +187,7 @@ export class FetchWiroHttpTransport implements WiroHttpTransport {
         errorTypeName(error),
       );
     } finally {
+      clearTimeout(timeout);
       this.#inFlight.delete(controller);
       request.signal?.removeEventListener('abort', abort);
     }

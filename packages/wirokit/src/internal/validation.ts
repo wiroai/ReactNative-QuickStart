@@ -64,11 +64,23 @@ export function validateUrl(
 
 export function validateBaseUrl(value: string): string {
   validateUrl(value, 'http', { label: 'base URL' });
+  const parsed = new URL(value);
+  if (parsed.protocol !== 'https:' && !isLoopbackHost(parsed.hostname)) {
+    throw new WiroValidationError(
+      'base URL must use HTTPS unless it targets a loopback host.',
+    );
+  }
   return trimTrailingSlashes(value);
 }
 
 export function validateWebSocketUrl(value: string): string {
   validateUrl(value, 'webSocket', { label: 'WebSocket URL' });
+  const parsed = new URL(value);
+  if (parsed.protocol !== 'wss:' && !isLoopbackHost(parsed.hostname)) {
+    throw new WiroValidationError(
+      'WebSocket URL must use WSS unless it targets a loopback host.',
+    );
+  }
   return trimTrailingSlashes(value);
 }
 
@@ -181,6 +193,10 @@ export function validateExpoUri(value: string): string {
   if (schemeSeparator <= 0) {
     throw new WiroValidationError('Expo file URI must include a scheme.');
   }
+  const scheme = trimmed.slice(0, schemeSeparator + 1).toLowerCase();
+  if (!EXPO_FILE_URI_SCHEMES.has(scheme)) {
+    throw new WiroValidationError('Expo file URI uses an unsupported scheme.');
+  }
   return trimmed;
 }
 
@@ -208,4 +224,23 @@ function rawAuthority(value: string): string {
   return authorityEnd < 0
     ? value.slice(authorityStart)
     : value.slice(authorityStart, authorityStart + authorityEnd);
+}
+
+const EXPO_FILE_URI_SCHEMES = new Set([
+  'asset:',
+  'assets-library:',
+  'content:',
+  'file:',
+  'ph:',
+]);
+
+function isLoopbackHost(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === 'localhost' ||
+    normalized.endsWith('.localhost') ||
+    normalized === '127.0.0.1' ||
+    normalized === '[::1]' ||
+    normalized === '::1'
+  );
 }

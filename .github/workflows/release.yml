@@ -1,0 +1,58 @@
+name: Publish npm package
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release tag
+        run: |
+          package_version="$(node -p \
+            "require('./packages/wirokit/package.json').version")"
+          test "${GITHUB_REF_NAME}" = "v${package_version}"
+
+      - name: Run release checks
+        run: |
+          pnpm format:check
+          pnpm lint
+          pnpm typecheck
+          pnpm build
+          pnpm test
+          pnpm test:coverage
+          pnpm verify:exports
+          pnpm verify:hmac:hermes
+          pnpm expo:config
+          pnpm expo:export:ios
+          pnpm expo:export:android
+          pnpm pack:dry-run
+
+      - name: Publish package
+        working-directory: packages/wirokit
+        run: npm publish --access public

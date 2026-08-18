@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  WIROKIT_VERSION,
   WiroAuthType,
   WiroClient,
   WiroClientLimits,
   WiroFileInput,
   type WiroLogEvent,
   WiroRetryPolicy,
+  WiroTimeoutError,
   WiroUnknownApiError,
   WiroValidationError,
   WiroValue,
@@ -80,14 +82,14 @@ describe('WiroClient authentication and configuration', () => {
     expect(request?.body).toBe('{"search":"image"}');
     expect(request?.headers).toMatchObject({
       'Content-Type': 'application/json',
-      'User-Agent': 'WiroKit-ReactNative/0.1.0',
+      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
       'x-api-key': 'test-api-key',
     });
     expect(request?.headers['x-nonce']).toBeUndefined();
     expect(request?.headers['x-signature']).toBeUndefined();
     expect(request?.timeoutMs).toBe(30_000);
     expect(client.authType).toBe(WiroAuthType.apiKey);
-    expect(makeWiroUserAgent()).toBe('WiroKit-ReactNative/0.1.0');
+    expect(makeWiroUserAgent()).toBe(`WiroKit-ReactNative/${WIROKIT_VERSION}`);
   });
 
   it('builds signature headers from the shared contract vector', async () => {
@@ -158,7 +160,7 @@ describe('WiroClient authentication and configuration', () => {
     expect(transport.requests[0]?.headers).toMatchObject({
       Authorization: 'Bearer proxy-secret',
       'Content-Type': 'application/json',
-      'User-Agent': 'WiroKit-ReactNative/0.1.0',
+      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
     });
     expect(transport.requests[0]?.headers['x-api-key']).toBeUndefined();
     expect(transport.requests[0]?.headers['user-agent']).toBeUndefined();
@@ -484,7 +486,7 @@ describe('WiroClient cancellation and ownership', () => {
     });
   });
 
-  it('maps per-attempt timeouts to retryable network errors', async () => {
+  it('maps per-attempt timeouts to typed timeout errors', async () => {
     vi.useFakeTimers();
     const transport = new FakeHttpTransport();
     transport.enqueue(
@@ -507,10 +509,7 @@ describe('WiroClient cancellation and ownership', () => {
       {},
     );
     const pending = client.postJson('/Tool/List');
-    const rejection = expect(pending).rejects.toMatchObject({
-      code: 'network',
-      underlyingType: 'TimeoutError',
-    });
+    const rejection = expect(pending).rejects.toBeInstanceOf(WiroTimeoutError);
 
     await vi.advanceTimersByTimeAsync(10);
 

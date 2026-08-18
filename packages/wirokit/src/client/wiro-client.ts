@@ -1313,9 +1313,9 @@ async function performAttempt(
     once: true,
   });
   state.controllers.add(controller);
-  const timeoutError = new WiroNetworkError(
-    'The network request failed.',
-    'TimeoutError',
+  const timeoutError = new WiroTimeoutError(
+    `The network request timed out after ${timeoutMs} ms.`,
+    timeoutMs,
   );
   const timeout = setTimeout(() => {
     controller.abort(timeoutError);

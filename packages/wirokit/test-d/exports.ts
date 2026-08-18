@@ -36,8 +36,8 @@ import {
   type WiroValue as WiroValueType,
 } from '@wiro-ai/wirokit-react-native';
 
-const version: '0.1.0' = WIROKIT_VERSION;
-const infoVersion: '0.1.0' = WiroKitInfo.version;
+const version: string = WIROKIT_VERSION;
+const infoVersion: typeof WIROKIT_VERSION = WiroKitInfo.version;
 const modelId = new WiroModelId('owner', 'project');
 const fileInput: WiroFileInputType = WiroFileInput.uri('file:///image.png');
 const value: WiroValueType = WiroValue.fileInput(fileInput);

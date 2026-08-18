@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  WIROKIT_VERSION,
   ExpoWiroFileContentSource,
   WiroBytesFileContent,
   WiroClient,
@@ -49,7 +50,7 @@ describe('WiroClient uploads', () => {
     const request = transport.requests[0];
     expect(request?.url).toBe('https://api.wiro.ai/v1/File/Upload');
     expect(request?.headers).toMatchObject({
-      'User-Agent': 'WiroKit-ReactNative/0.1.0',
+      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
       'x-api-key': 'test-api-key',
     });
     expect(request?.headers['Content-Type']).toMatch(

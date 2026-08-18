@@ -156,12 +156,14 @@ describe('WiroFileInput', () => {
     );
   });
 
-  it.each(['', 'relative/path.png', 'file:///image.png\r\nx-header: value'])(
-    'rejects invalid Expo URI %s',
-    (uri) => {
-      expect(() => WiroFileInput.uri(uri)).toThrow(WiroValidationError);
-    },
-  );
+  it.each([
+    '',
+    'relative/path.png',
+    'https://example.com/image.png',
+    'file:///image.png\r\nx-header: value',
+  ])('rejects invalid Expo URI %s', (uri) => {
+    expect(() => WiroFileInput.uri(uri)).toThrow(WiroValidationError);
+  });
 });
 
 describe('safe validators', () => {
@@ -172,6 +174,9 @@ describe('safe validators', () => {
     expect(validateWebSocketUrl('wss://socket.wiro.ai/v1/')).toBe(
       'wss://socket.wiro.ai/v1',
     );
+    expect(validateWebSocketUrl('ws://localhost:3000/v1/')).toBe(
+      'ws://localhost:3000/v1',
+    );
     expect(validateCallbackUrl('https://app.example.com/callback?task=1')).toBe(
       'https://app.example.com/callback?task=1',
     );
@@ -179,16 +184,26 @@ describe('safe validators', () => {
       'https://app.example.com?task=1',
     );
     expect(validateBaseUrl('https://example.com')).toBe('https://example.com');
+    expect(validateBaseUrl('http://localhost:3000/v1/')).toBe(
+      'http://localhost:3000/v1',
+    );
   });
 
   it.each([
     'ftp://api.wiro.ai/v1',
+    'http://api.wiro.ai/v1',
     'https://api.wiro.ai/v1?secret=1',
     'https://api.wiro.ai/v1#fragment',
     'https://user:secret@api.wiro.ai/v1',
     ' https://api.wiro.ai/v1',
   ])('rejects invalid base URL %s', (url) => {
     expect(() => validateBaseUrl(url)).toThrow(WiroValidationError);
+  });
+
+  it('rejects insecure remote WebSocket URLs', () => {
+    expect(() => validateWebSocketUrl('ws://socket.wiro.ai/v1')).toThrow(
+      WiroValidationError,
+    );
   });
 
   it('rejects callback fragments and userinfo', () => {
