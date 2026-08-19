@@ -239,6 +239,12 @@ export {
   type WiroHttpTransport,
 } from './transport/http-transport';
 export {
+  ExpoWiroStreamUploadTransport,
+  type WiroStreamUploadProgress,
+  type WiroStreamUploadRequest,
+  type WiroStreamUploadTransport,
+} from './transport/stream-upload-transport';
+export {
   ExpoWiroSocketSessionFactory,
   type WiroSocketConnectOptions,
   type WiroSocketFrame,

@@ -9,6 +9,13 @@ export interface WiroMultipartFilePartOptions {
   readonly fileName: string;
 }
 
+export interface WiroMultipartFileFraming {
+  readonly boundary: string;
+  readonly contentType: string;
+  readonly prefix: Uint8Array;
+  readonly suffix: Uint8Array;
+}
+
 export class WiroMultipartBody {
   readonly boundary: string;
   readonly contentType: string;
@@ -29,11 +36,26 @@ export class WiroMultipartBody {
 export function buildMultipartFilePart(
   options: WiroMultipartFilePartOptions,
 ): WiroMultipartBody {
-  const boundary = options.boundary ?? generateBoundary();
+  const framing = buildMultipartFileFraming(options.fileName, options.boundary);
+  const { boundary, contentType, prefix, suffix } = framing;
+  const body = new Uint8Array(
+    prefix.byteLength + options.bytes.byteLength + suffix.byteLength,
+  );
+  body.set(prefix, 0);
+  body.set(options.bytes, prefix.byteLength);
+  body.set(suffix, prefix.byteLength + options.bytes.byteLength);
+  return new WiroMultipartBody(boundary, contentType, body);
+}
+
+export function buildMultipartFileFraming(
+  fileName: string,
+  requestedBoundary?: string,
+): WiroMultipartFileFraming {
+  const boundary = requestedBoundary ?? generateBoundary();
   if (!BOUNDARY_PATTERN.test(boundary)) {
     throw new WiroValidationError('Invalid multipart boundary.');
   }
-  const escapedName = escapeMultipartFileName(options.fileName);
+  const escapedName = escapeMultipartFileName(fileName);
   const prefix = encodeUtf8(
     `--${boundary}\r\n` +
       'Content-Disposition: form-data; name="file"; ' +
@@ -41,17 +63,12 @@ export function buildMultipartFilePart(
       'Content-Type: application/octet-stream\r\n\r\n',
   );
   const suffix = encodeUtf8(`\r\n--${boundary}--\r\n`);
-  const body = new Uint8Array(
-    prefix.byteLength + options.bytes.byteLength + suffix.byteLength,
-  );
-  body.set(prefix, 0);
-  body.set(options.bytes, prefix.byteLength);
-  body.set(suffix, prefix.byteLength + options.bytes.byteLength);
-  return new WiroMultipartBody(
+  return Object.freeze({
     boundary,
-    `multipart/form-data; boundary=${boundary}`,
-    body,
-  );
+    contentType: `multipart/form-data; boundary=${boundary}`,
+    prefix,
+    suffix,
+  });
 }
 
 export function escapeMultipartFileName(value: string): string {

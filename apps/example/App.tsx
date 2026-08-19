@@ -7,6 +7,7 @@ import {
   WiroTaskFailure,
   type WiroTaskOutput,
   WiroTaskSuccess,
+  type WiroStreamUploadProgress,
 } from '@wiro-ai/wirokit-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -29,12 +30,23 @@ type GenerationState =
   | { kind: 'success'; imageUrl: string }
   | { kind: 'failure'; message: string };
 
+type UploadState =
+  | { kind: 'idle' }
+  | { kind: 'loading'; progress: WiroStreamUploadProgress }
+  | { kind: 'success'; fileId: string }
+  | { kind: 'failure'; message: string };
+
 const apiKey = process.env.EXPO_PUBLIC_WIRO_API_KEY?.trim() ?? '';
+const uploadBytes = 20 * 1024 * 1024;
 
 export default function App() {
   const [prompt, setPrompt] = useState('');
   const [state, setState] = useState<GenerationState>({ kind: 'idle' });
+  const [uploadState, setUploadState] = useState<UploadState>({
+    kind: 'idle',
+  });
   const abortRef = useRef<AbortController | null>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null);
   const client = useMemo(() => {
     if (apiKey.length === 0) {
       return null;
@@ -45,6 +57,7 @@ export default function App() {
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      uploadAbortRef.current?.abort();
       client?.close();
     };
   }, [client]);
@@ -142,7 +155,71 @@ export default function App() {
     }
   }
 
+  async function uploadGeneratedStream(): Promise<void> {
+    if (uploadState.kind === 'loading') {
+      return;
+    }
+    if (client === null) {
+      setUploadState({
+        kind: 'failure',
+        message: 'Wiro API key is not configured.',
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    uploadAbortRef.current?.abort();
+    uploadAbortRef.current = controller;
+    setUploadState({
+      kind: 'loading',
+      progress: {
+        bytesProcessed: 0,
+        phase: 'spooling',
+        totalBytes: uploadBytes,
+      },
+    });
+
+    try {
+      const result = await client.uploadStream(
+        generatedStream(uploadBytes),
+        `generated-device-test-${Date.now()}.txt`,
+        {
+          contentLength: uploadBytes,
+          onProgress: (progress) => {
+            setUploadState({ kind: 'loading', progress });
+          },
+          signal: controller.signal,
+        },
+      );
+      const file = result.files[0];
+      if (!result.isSuccess || file === undefined) {
+        throw new Error('Upload response did not contain a file.');
+      }
+      setUploadState({ fileId: file.id, kind: 'success' });
+    } catch (error) {
+      if (controller.signal.aborted || isAbortError(error)) {
+        setUploadState({
+          kind: 'failure',
+          message: 'Upload cancelled.',
+        });
+        return;
+      }
+      setUploadState({
+        kind: 'failure',
+        message:
+          error instanceof WiroError
+            ? `Wiro upload failed (${error.code}).`
+            : 'Stream upload failed.',
+      });
+    } finally {
+      if (uploadAbortRef.current === controller) {
+        uploadAbortRef.current = null;
+      }
+    }
+  }
+
   const isLoading = state.kind === 'loading';
+  const isUploading = uploadState.kind === 'loading';
 
   return (
     <KeyboardAvoidingView
@@ -190,12 +267,80 @@ export default function App() {
           )}
         </Pressable>
         <GenerationResult state={state} />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Memory-bounded upload</Text>
+          <Text style={styles.subtitle}>
+            Generate a 20 MiB byte stream, spool it to the cache, and upload it
+            with the native Expo file task.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isUploading}
+            onPress={() => {
+              void uploadGeneratedStream();
+            }}
+            style={[styles.button, isUploading ? styles.buttonDisabled : null]}
+          >
+            <Text style={styles.buttonLabel}>Upload 20 MiB stream</Text>
+          </Pressable>
+          {isUploading ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => uploadAbortRef.current?.abort()}
+              style={styles.secondaryButton}
+            >
+              <Text style={styles.secondaryButtonLabel}>Cancel upload</Text>
+            </Pressable>
+          ) : null}
+          <UploadResult state={uploadState} />
+        </View>
         <Text style={styles.notice}>
           This direct credential setup is for local development only. Production
           mobile apps should call Wiro through your backend.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function UploadResult({ state }: { state: UploadState }) {
+  if (state.kind === 'idle') {
+    return null;
+  }
+  if (state.kind === 'loading') {
+    const progress = state.progress;
+    const completedBytes =
+      progress.phase === 'spooling'
+        ? progress.bytesProcessed
+        : progress.bytesSent;
+    const percent =
+      progress.totalBytes <= 0
+        ? 0
+        : Math.min(
+            100,
+            Math.floor((completedBytes / progress.totalBytes) * 100),
+          );
+    const label =
+      progress.phase === 'spooling' ? 'Preparing file' : 'Uploading';
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardText}>
+          {label}: {percent}%
+        </Text>
+      </View>
+    );
+  }
+  if (state.kind === 'failure') {
+    return (
+      <View style={[styles.card, styles.errorCard]}>
+        <Text style={styles.errorText}>{state.message}</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardText}>Uploaded file ID: {state.fileId}</Text>
+    </View>
   );
 }
 
@@ -242,6 +387,21 @@ function firstImageUrl(outputs: readonly WiroTaskOutput[]): string | undefined {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
+}
+
+async function* generatedStream(
+  contentLength: number,
+): AsyncGenerator<Uint8Array> {
+  const chunkBytes = 256 * 1024;
+  let offset = 0;
+  while (offset < contentLength) {
+    const length = Math.min(chunkBytes, contentLength - offset);
+    const chunk = new Uint8Array(length);
+    chunk.fill((offset / chunkBytes) % 251);
+    offset += length;
+    yield chunk;
+    await Promise.resolve();
+  }
 }
 
 const styles = StyleSheet.create({
@@ -317,6 +477,32 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: '#F5F7FB',
     flex: 1,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    borderColor: '#111827',
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: 16,
+  },
+  secondaryButtonLabel: {
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  section: {
+    borderColor: '#D1D5DB',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+    padding: 16,
+  },
+  sectionTitle: {
+    color: '#111827',
+    fontSize: 20,
+    fontWeight: '700',
   },
   subtitle: {
     color: '#4B5563',

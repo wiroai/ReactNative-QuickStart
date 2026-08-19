@@ -1,5 +1,6 @@
 import {
   WIROKIT_VERSION,
+  ExpoWiroStreamUploadTransport,
   WiroBytesFileContent,
   Wiro,
   WiroClient,
@@ -21,6 +22,7 @@ import {
   type WiroRunResult,
   type WiroSocketEvent,
   type WiroSocketSessionFactory,
+  type WiroStreamUploadProgress,
   type WiroTaskResult,
   type WiroTask,
   WiroTaskId,
@@ -51,6 +53,7 @@ const transport: WiroHttpTransport = {
     });
   },
 };
+const streamUploadTransport = new ExpoWiroStreamUploadTransport();
 const client = new WiroClient({
   apiKey: 'test-api-key',
   transport,
@@ -117,7 +120,12 @@ const streamUpload: Promise<WiroUploadResult> = client.uploadStream(
     yield new Uint8Array([1, 2, 3]);
   })(),
   'stream.bin',
-  { contentLength: 3 },
+  {
+    contentLength: 3,
+    onProgress(progress: WiroStreamUploadProgress) {
+      void progress.phase;
+    },
+  },
 );
 
 void version;
@@ -142,3 +150,4 @@ void socketWatch;
 void socketFactory;
 void upload;
 void streamUpload;
+void streamUploadTransport;

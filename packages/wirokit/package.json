@@ -1,7 +1,7 @@
 {
   "name": "@wiro-ai/wirokit-react-native",
   "version": "0.1.0",
-  "description": "Pure TypeScript Wiro SDK for React Native",
+  "description": "Type-safe Wiro SDK for React Native and Expo",
   "keywords": [
     "wiro",
     "react-native",
@@ -22,11 +22,11 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "react-native": "./dist/index.js",
+  "react-native": "./dist/index.native.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "react-native": "./dist/index.js",
+      "react-native": "./dist/index.native.js",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
@@ -40,7 +40,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsup --config tsup.native.config.ts",
     "prepack": "corepack pnpm build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -49,6 +49,8 @@
     "verify:hmac:hermes": "node scripts/verify-hmac-hermes.mjs"
   },
   "peerDependencies": {
+    "expo": ">=54.0.0",
+    "expo-file-system": ">=19.0.0 <20.0.0",
     "react-native": ">=0.76.0"
   },
   "publishConfig": {

@@ -2,8 +2,8 @@
 
 Type-safe Wiro SDK for React Native and Expo Go on iOS and Android.
 
-The SDK is implemented entirely in TypeScript. It has no native module,
-autolinking, CocoaPods, Gradle, TurboModule, Fabric, or codegen setup.
+The SDK has no custom native bridge. Memory-bounded stream uploads use the
+official Expo FileSystem module included in Expo Go.
 
 ## Installation
 
@@ -17,6 +17,10 @@ yarn add @wiro-ai/wirokit-react-native
 
 ```sh
 pnpm add @wiro-ai/wirokit-react-native
+```
+
+```sh
+npx expo install expo-file-system
 ```
 
 See the [package guide](packages/wirokit/README.md) for authentication,

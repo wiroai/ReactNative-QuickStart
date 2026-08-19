@@ -4,11 +4,13 @@ import {
   WIROKIT_VERSION,
   ExpoWiroFileContentSource,
   WiroBytesFileContent,
+  type WiroByteStream,
   WiroClient,
   WiroClientLimits,
   type WiroFileContent,
   type WiroFileContentSource,
   WiroFileInput,
+  WiroHttpResponse,
   WiroModelId,
   type WiroReadableFileInput,
   WiroRetryPolicy,
@@ -17,6 +19,7 @@ import {
   WiroValue,
 } from '../src';
 import { FakeHttpTransport } from './support/fake-http-transport';
+import { FakeStreamUploadTransport } from './support/fake-stream-upload-transport';
 
 function client(
   transport: FakeHttpTransport,
@@ -24,6 +27,7 @@ function client(
     readonly contentSource?: WiroFileContentSource;
     readonly limits?: WiroClientLimits;
     readonly retryPolicy?: WiroRetryPolicy;
+    readonly streamTransport?: FakeStreamUploadTransport;
   } = {},
 ): WiroClient {
   return new WiroClient({
@@ -33,6 +37,9 @@ function client(
       : { fileContentSource: options.contentSource }),
     ...(options.limits === undefined ? {} : { limits: options.limits }),
     retryPolicy: options.retryPolicy ?? WiroRetryPolicy.none,
+    ...(options.streamTransport === undefined
+      ? {}
+      : { streamUploadTransport: options.streamTransport }),
     transport,
   });
 }
@@ -109,28 +116,56 @@ describe('WiroClient uploads', () => {
 
   it('uploads an async byte stream of the declared length', async () => {
     const transport = new FakeHttpTransport();
-    transport.enqueueJson(
-      200,
-      uploadResponse('https://cdn.wiro.ai/stream.bin'),
-    );
+    const streamTransport = new FakeStreamUploadTransport();
+    let streamedBody: Uint8Array<ArrayBufferLike> = new Uint8Array();
+    const onProgress = vi.fn();
+    streamTransport.enqueue(async (request) => {
+      streamedBody = await collectBytes(request.stream);
+      request.onProgress?.({
+        bytesSent: streamedBody.byteLength,
+        phase: 'uploading',
+        totalBytes: streamedBody.byteLength,
+      });
+      return new WiroHttpResponse({
+        body: uploadResponse('https://cdn.wiro.ai/stream.bin'),
+        statusCode: 200,
+      });
+    });
 
-    const result = await client(transport).uploadStream(
-      chunks([0x89], [0x50, 0x4e], [0x47]),
-      'stream.bin',
-      { contentLength: 4 },
-    );
+    const result = await client(transport, {
+      streamTransport,
+    }).uploadStream(chunks([0x89], [0x50, 0x4e], [0x47]), 'stream.bin', {
+      contentLength: 4,
+      onProgress,
+    });
 
     expect(result.files[0]?.url?.pathname).toBe('/stream.bin');
-    expect(asAscii(transport.requests[0]?.binaryBody)).toContain(
-      'filename="stream.bin"',
+    expect(transport.requests).toHaveLength(0);
+    expect(streamTransport.requests[0]).toMatchObject({
+      contentLength: 4,
+      fileName: 'stream.bin',
+      url: 'https://api.wiro.ai/v1/File/Upload',
+    });
+    expect(streamTransport.requests[0]?.headers).toMatchObject({
+      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
+      'x-api-key': 'test-api-key',
+    });
+    expect(streamTransport.requests[0]?.headers).not.toHaveProperty(
+      'Content-Type',
     );
-    expect(asAscii(transport.requests[0]?.binaryBody)).toContain('\u0089PNG');
+    expect(streamedBody).toEqual(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    expect(onProgress).toHaveBeenCalledWith({
+      bytesSent: 4,
+      phase: 'uploading',
+      totalBytes: 4,
+    });
   });
 
   it('never retries stream upload failures', async () => {
     const transport = new FakeHttpTransport();
-    transport.enqueueJson(503, '{"message":"busy"}');
-    transport.enqueueJson(
+    const streamTransport = new FakeStreamUploadTransport();
+    streamTransport.enqueueJson(503, '{"message":"busy"}');
+    streamTransport.enqueueJson(
       200,
       uploadResponse('https://cdn.wiro.ai/unexpected'),
     );
@@ -138,23 +173,33 @@ describe('WiroClient uploads', () => {
     await expect(
       client(transport, {
         retryPolicy: WiroRetryPolicy.default,
+        streamTransport,
       }).uploadStream(chunks([1, 2, 3]), 'file.bin', { contentLength: 3 }),
     ).rejects.toMatchObject({ statusCode: 503 });
-    expect(transport.requests).toHaveLength(1);
+    expect(streamTransport.requests).toHaveLength(1);
   });
 
-  it('rejects an oversize stream before transport', async () => {
+  it('does not apply the in-memory limit to stream uploads', async () => {
     const transport = new FakeHttpTransport();
+    const streamTransport = new FakeStreamUploadTransport();
+    streamTransport.enqueue(async (request) => {
+      await collectBytes(request.stream);
+      return new WiroHttpResponse({
+        body: uploadResponse('https://cdn.wiro.ai/large.bin'),
+        statusCode: 200,
+      });
+    });
     const sdk = client(transport, {
       limits: new WiroClientLimits({
         maxInMemoryUploadBytes: 2,
       }),
+      streamTransport,
     });
 
     await expect(
       sdk.uploadStream(chunks([1, 2, 3]), 'file.bin', { contentLength: 3 }),
-    ).rejects.toThrow('In-memory upload exceeds the configured size limit.');
-    expect(transport.requests).toHaveLength(0);
+    ).resolves.toBeInstanceOf(WiroUploadResult);
+    expect(streamTransport.requests).toHaveLength(1);
   });
 
   it('uploads Blob inputs through the bounded content source', async () => {
@@ -482,6 +527,43 @@ function uploadResponse(url: string): string {
 
 function asAscii(body: string | Uint8Array | Blob | undefined): string {
   return body instanceof Uint8Array ? String.fromCharCode(...body) : '';
+}
+
+async function collectBytes(stream: WiroByteStream): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  const iterable =
+    Symbol.asyncIterator in stream ? stream : readableStreamChunks(stream);
+  for await (const chunk of iterable) {
+    chunks.push(chunk);
+    length += chunk.byteLength;
+  }
+  const result = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return result;
+}
+
+async function* readableStreamChunks(
+  stream: Exclude<WiroByteStream, AsyncIterable<Uint8Array>>,
+): AsyncGenerator<Uint8Array> {
+  const reader = stream.getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return;
+      }
+      if (value !== undefined) {
+        yield value;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 async function* chunks(

@@ -16,9 +16,15 @@ yarn add @wiro-ai/wirokit-react-native
 pnpm add @wiro-ai/wirokit-react-native
 ```
 
-The package is pure TypeScript and requires no autolinking, CocoaPods,
-Gradle, TurboModule, Fabric, or codegen configuration. The same package works
-in Expo Go and bare React Native applications.
+Install the Expo FileSystem peer with the version selected for your Expo SDK:
+
+```sh
+npx expo install expo-file-system
+```
+
+The SDK ships no custom native bridge. Stream uploads use the official
+`expo-file-system` module included in Expo Go. Bare React Native applications
+must have Expo Modules configured.
 
 ## Quick start
 
@@ -179,10 +185,19 @@ Available upload methods:
 - `uploadStream(stream, fileName, { contentLength })`
 - `uploadFileFromUri(uri, options)`
 
-Byte, Blob, and stream uploads are limited by
-`WiroClientLimits.maxInMemoryUploadBytes`, which defaults to 16 MiB. Expo
-picker URIs use native `FormData` and avoid copying the file into the
-JavaScript heap.
+`uploadStream` writes the multipart framing and each stream chunk to an
+app-cache temporary file, then sends that body with Expo's native from-file
+upload task. This avoids Expo's iOS multipart path, which builds the body in
+memory. The SDK keeps the full file out of the JavaScript heap, works in Expo
+Go, supports cancellation, and removes the temporary file after success or
+failure. It is disk-spooled rather than a direct stream-to-network request.
+Its optional `onProgress` callback reports separate `spooling` and `uploading`
+phases so disk preparation is not presented as network progress.
+
+Byte and Blob uploads are limited by
+`WiroClientLimits.maxInMemoryUploadBytes`, which defaults to 16 MiB. Expo picker
+URIs use native `FormData` and also avoid copying the file into the JavaScript
+heap.
 
 ## Tracking tasks
 

@@ -62,10 +62,7 @@ import {
 } from '../internal/runtime';
 import { redactSensitiveText } from '../internal/redaction';
 import { createWiroSignature } from '../internal/signature';
-import {
-  type WiroByteStream,
-  readExactByteStream,
-} from '../internal/byte-stream';
+import { type WiroByteStream } from '../internal/byte-stream';
 import { encodeUtf8, utf8ByteLength } from '../internal/utf8';
 import {
   requirePositiveDuration,
@@ -106,6 +103,11 @@ import {
   type WiroHttpResponse,
   type WiroHttpTransport,
 } from '../transport/http-transport';
+import {
+  ExpoWiroStreamUploadTransport,
+  type WiroStreamUploadProgress,
+  type WiroStreamUploadTransport,
+} from '../transport/stream-upload-transport';
 import { decodeResponseEnvelope } from '../transport/response-envelope';
 import {
   ExpoWiroSocketSessionFactory,
@@ -116,6 +118,7 @@ import { WIROKIT_VERSION } from '../wiro-kit-info';
 
 interface WiroClientCommonOptions {
   readonly closeTransportOnClose?: boolean;
+  readonly closeStreamUploadTransportOnClose?: boolean;
   readonly fileContentSource?: WiroFileContentSource;
   readonly limits?: WiroClientLimits | WiroClientLimitsOptions;
   readonly logger?: WiroLogger;
@@ -124,6 +127,7 @@ interface WiroClientCommonOptions {
   readonly retryPolicy?: WiroRetryPolicy;
   readonly socketUrl?: string;
   readonly socketSessionFactory?: WiroSocketSessionFactory;
+  readonly streamUploadTransport?: WiroStreamUploadTransport;
   readonly transport?: WiroHttpTransport;
 }
 
@@ -184,6 +188,7 @@ export type { WiroByteStream } from '../internal/byte-stream';
 
 export interface WiroUploadStreamOptions extends WiroUploadOptions {
   readonly contentLength: number;
+  readonly onProgress?: (progress: WiroStreamUploadProgress) => void;
 }
 
 export interface WiroWatchTaskOptions extends WiroDiscoveryRequestOptions {
@@ -219,14 +224,27 @@ interface ProxyAuth {
 
 type ClientAuth = ApiKeyAuth | SignatureAuth | ProxyAuth;
 
+const STREAM_UPLOAD_BODY = Symbol('WiroStreamUploadBody');
+
+interface StreamUploadBody {
+  readonly contentLength: number;
+  readonly fileName: string;
+  readonly onProgress:
+    ((progress: WiroStreamUploadProgress) => void) | undefined;
+  readonly stream: WiroByteStream;
+  readonly type: typeof STREAM_UPLOAD_BODY;
+}
+
 interface ClientState {
   readonly auth: ClientAuth;
   readonly controllers: Set<AbortController>;
   readonly fileContentSource: WiroFileContentSource | undefined;
   readonly logger: WiroLogger | undefined;
+  readonly ownsStreamUploadTransport: boolean;
   readonly ownsTransport: boolean;
   readonly runtime: WiroRuntimeDependencies;
   readonly socketSessionFactory: WiroSocketSessionFactory;
+  readonly streamUploadTransport: WiroStreamUploadTransport;
   readonly transport: WiroHttpTransport;
   closed: boolean;
 }
@@ -251,6 +269,8 @@ export class WiroClient {
     const internalOptions = options as InternalClientOptions;
     const auth = resolveAuth(options);
     const transport = options.transport ?? new FetchWiroHttpTransport();
+    const streamUploadTransport =
+      options.streamUploadTransport ?? new ExpoWiroStreamUploadTransport();
 
     this.authType = auth.type;
     this.baseUrl = validateBaseUrl(
@@ -281,12 +301,16 @@ export class WiroClient {
       controllers: new Set(),
       fileContentSource: options.fileContentSource,
       logger: options.logger,
+      ownsStreamUploadTransport:
+        options.streamUploadTransport === undefined ||
+        options.closeStreamUploadTransportOnClose === true,
       ownsTransport:
         options.transport === undefined ||
         options.closeTransportOnClose === true,
       runtime: createRuntimeDependencies(internalOptions[RUNTIME_OVERRIDES]),
       socketSessionFactory:
         options.socketSessionFactory ?? new ExpoWiroSocketSessionFactory(),
+      streamUploadTransport,
       transport,
     });
     Object.freeze(this);
@@ -406,17 +430,15 @@ export class WiroClient {
     ) {
       throw new WiroValidationError('contentLength cannot be negative.');
     }
-    if (options.contentLength > this.limits.maxInMemoryUploadBytes) {
-      throw new WiroValidationError(
-        'In-memory upload exceeds the configured size limit.',
-      );
-    }
-    const bytes = await readExactByteStream(
+    const uploadBody: StreamUploadBody = {
+      contentLength: options.contentLength,
+      fileName,
+      onProgress: options.onProgress,
       stream,
-      options.contentLength,
-      options.signal,
-    );
-    return this.uploadFile(bytes, fileName, options);
+      type: STREAM_UPLOAD_BODY,
+    };
+    const json = await this.sendUpload(uploadBody, options.signal);
+    return WiroUploadResult.parse(json, malformedJsonHandler(state));
   }
 
   async uploadFileFromUri(
@@ -891,7 +913,7 @@ export class WiroClient {
   }
 
   private async sendUpload(
-    uploadBody: WiroMultipartBody | FormData,
+    uploadBody: WiroMultipartBody | StreamUploadBody | FormData,
     signal: AbortSignal | undefined,
   ): Promise<WiroJson> {
     const state = getState(this);
@@ -918,21 +940,40 @@ export class WiroClient {
 
     let response: WiroHttpResponse;
     try {
-      response = await performAttempt(
-        state,
-        new WiroHttpRequest({
-          ...(uploadBody instanceof WiroMultipartBody
-            ? { binaryBody: uploadBody.body }
-            : { formDataBody: uploadBody }),
-          headers,
-          maxResponseBodyBytes: this.limits.maxRestBodyBytes,
-          method: 'POST',
-          timeoutMs: this.requestTimeoutMs,
-          url,
-        }),
-        signal,
-        this.requestTimeoutMs,
-      );
+      response = isStreamUploadBody(uploadBody)
+        ? await performScopedOperation(
+            state,
+            signal,
+            this.requestTimeoutMs,
+            (scopeSignal) =>
+              state.streamUploadTransport.upload({
+                contentLength: uploadBody.contentLength,
+                fileName: uploadBody.fileName,
+                headers,
+                maxResponseBodyBytes: this.limits.maxRestBodyBytes,
+                ...(uploadBody.onProgress === undefined
+                  ? {}
+                  : { onProgress: uploadBody.onProgress }),
+                signal: scopeSignal,
+                stream: uploadBody.stream,
+                url,
+              }),
+          )
+        : await performAttempt(
+            state,
+            new WiroHttpRequest({
+              ...(uploadBody instanceof WiroMultipartBody
+                ? { binaryBody: uploadBody.body }
+                : { formDataBody: uploadBody }),
+              headers,
+              maxResponseBodyBytes: this.limits.maxRestBodyBytes,
+              method: 'POST',
+              timeoutMs: this.requestTimeoutMs,
+              url,
+            }),
+            signal,
+            this.requestTimeoutMs,
+          );
     } catch (error) {
       rethrowIfRequestAborted(signal, error);
       const mapped = mapTransportError(error);
@@ -1104,6 +1145,9 @@ export class WiroClient {
       controller.abort(createAbortError());
     }
     state.controllers.clear();
+    if (state.ownsStreamUploadTransport) {
+      state.streamUploadTransport.dispose();
+    }
     if (state.ownsTransport) {
       state.transport.dispose();
     }
@@ -1299,12 +1343,54 @@ function encodeRequestBody(body: WiroJson, maximumBytes: number): string {
   return encoded;
 }
 
+function isStreamUploadBody(
+  value: WiroMultipartBody | StreamUploadBody | FormData,
+): value is StreamUploadBody {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === STREAM_UPLOAD_BODY
+  );
+}
+
 async function performAttempt(
   state: ClientState,
   request: WiroHttpRequest,
   externalSignal: AbortSignal | undefined,
   timeoutMs: number,
 ): Promise<WiroHttpResponse> {
+  return performScopedOperation(
+    state,
+    externalSignal,
+    timeoutMs,
+    (scopeSignal) =>
+      state.transport.perform(
+        new WiroHttpRequest({
+          ...(request.binaryBody === undefined
+            ? {}
+            : { binaryBody: request.binaryBody }),
+          ...(request.body === undefined ? {} : { body: request.body }),
+          ...(request.formDataBody === undefined
+            ? {}
+            : { formDataBody: request.formDataBody }),
+          headers: request.headers,
+          maxResponseBodyBytes: request.maxResponseBodyBytes,
+          method: request.method,
+          signal: scopeSignal,
+          timeoutMs: request.timeoutMs,
+          url: request.url,
+        }),
+      ),
+  );
+}
+
+async function performScopedOperation<T>(
+  state: ClientState,
+  externalSignal: AbortSignal | undefined,
+  timeoutMs: number,
+  operationFactory: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
   const controller = new AbortController();
   const abort = (): void => {
     controller.abort(externalSignal?.reason ?? createAbortError());
@@ -1322,23 +1408,7 @@ async function performAttempt(
   }, timeoutMs);
 
   try {
-    const operation = state.transport.perform(
-      new WiroHttpRequest({
-        ...(request.binaryBody === undefined
-          ? {}
-          : { binaryBody: request.binaryBody }),
-        ...(request.body === undefined ? {} : { body: request.body }),
-        ...(request.formDataBody === undefined
-          ? {}
-          : { formDataBody: request.formDataBody }),
-        headers: request.headers,
-        maxResponseBodyBytes: request.maxResponseBodyBytes,
-        method: request.method,
-        signal: controller.signal,
-        timeoutMs: request.timeoutMs,
-        url: request.url,
-      }),
-    );
+    const operation = operationFactory(controller.signal);
     return await rejectOnAbort(operation, controller.signal);
   } catch (error) {
     if (controller.signal.aborted) {

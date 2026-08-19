@@ -5,6 +5,7 @@ import {
   WIROKIT_VERSION as importedVersion,
   ExpoWiroFileContentSource,
   ExpoWiroSocketSessionFactory,
+  ExpoWiroStreamUploadTransport,
   FetchWiroHttpTransport,
   Wiro,
   WiroClient,
@@ -42,6 +43,7 @@ assert.ok(new WiroValidationError('Invalid.') instanceof Error);
 const client = new WiroClient({ apiKey: 'test-api-key' });
 assert.equal(client.authType, 'apiKey');
 assert.equal(typeof FetchWiroHttpTransport, 'function');
+assert.equal(typeof ExpoWiroStreamUploadTransport, 'function');
 assert.equal(WiroModelSort.ratedUserCount, 'ratedusercount');
 assert.equal(typeof WiroModelSchema.parse, 'function');
 assert.equal(typeof WiroPaginatedResult.parse, 'function');

@@ -103,6 +103,36 @@ describe('readExactByteStream', () => {
       readExactByteStream(aborting(), 2, controller.signal),
     ).rejects.toBe(reason);
   });
+
+  it('cancels a reader whose read is still pending', async () => {
+    const controller = new AbortController();
+    const reason = new Error('stopped while reading');
+    let cancelCount = 0;
+    let releaseCount = 0;
+    const stream: WiroReadableByteStream = {
+      getReader() {
+        return {
+          async cancel() {
+            cancelCount += 1;
+          },
+          async read() {
+            return await new Promise(() => undefined);
+          },
+          releaseLock() {
+            releaseCount += 1;
+          },
+        };
+      },
+    };
+    const pending = readExactByteStream(stream, 1, controller.signal);
+
+    controller.abort(reason);
+
+    await expect(pending).rejects.toBe(reason);
+    await Promise.resolve();
+    expect(cancelCount).toBeGreaterThan(0);
+    expect(releaseCount).toBeGreaterThan(0);
+  });
 });
 
 async function* chunks(

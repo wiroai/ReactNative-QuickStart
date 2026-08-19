@@ -17,6 +17,7 @@ describe('App', () => {
       screen.getByText(`Version ${WiroKitInfo.version} · FLUX.2 Pro`),
     ).toBeOnTheScreen();
     expect(screen.getByText('Generate image')).toBeOnTheScreen();
+    expect(screen.getByText('Upload 20 MiB stream')).toBeOnTheScreen();
   });
 
   it('asks for a prompt before generating', async () => {
