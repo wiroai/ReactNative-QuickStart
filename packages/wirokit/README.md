@@ -22,9 +22,8 @@ Install the Expo FileSystem peer with the version selected for your Expo SDK:
 npx expo install expo-file-system
 ```
 
-The SDK ships no custom native bridge. Stream uploads use the official
-`expo-file-system` module included in Expo Go. Bare React Native applications
-must have Expo Modules configured.
+Stream uploads use the official `expo-file-system` module included in Expo Go.
+Bare React Native applications must have Expo Modules configured.
 
 ## Quick start
 
@@ -187,12 +186,10 @@ Available upload methods:
 
 `uploadStream` writes the multipart framing and each stream chunk to an
 app-cache temporary file, then sends that body with Expo's native from-file
-upload task. This avoids Expo's iOS multipart path, which builds the body in
-memory. The SDK keeps the full file out of the JavaScript heap, works in Expo
-Go, supports cancellation, and removes the temporary file after success or
-failure. It is disk-spooled rather than a direct stream-to-network request.
-Its optional `onProgress` callback reports separate `spooling` and `uploading`
-phases so disk preparation is not presented as network progress.
+upload task. The SDK keeps the full file out of the JavaScript heap, works in
+Expo Go, supports cancellation, and removes the temporary file after success
+or failure. Its optional `onProgress` callback reports separate `spooling` and
+`uploading` phases.
 
 Byte and Blob uploads are limited by
 `WiroClientLimits.maxInMemoryUploadBytes`, which defaults to 16 MiB. Expo picker
@@ -232,10 +229,10 @@ for await (const update of updates) {
 
 ## Low-level requests
 
-`client.postJson(path, body, options)` is available for Wiro endpoints that do
-not yet have a dedicated method. The path must be relative to the configured
-base URL and must not contain a query string or fragment. Prefer the typed
-client methods and `Wiro` request factories whenever possible.
+`client.postJson(path, body, options)` is an escape hatch for endpoints without
+a dedicated high-level method. The path must be relative to the configured base
+URL and must not contain a query string or fragment. Prefer the typed client
+methods and `Wiro` request factories whenever possible.
 
 ## Cancellation
 

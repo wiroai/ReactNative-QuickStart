@@ -182,7 +182,7 @@ export default function App() {
     try {
       const result = await client.uploadStream(
         generatedStream(uploadBytes),
-        `generated-device-test-${Date.now()}.txt`,
+        `example-stream-upload-${Date.now()}.txt`,
         {
           contentLength: uploadBytes,
           onProgress: (progress) => {
@@ -268,10 +268,10 @@ export default function App() {
         </Pressable>
         <GenerationResult state={state} />
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Memory-bounded upload</Text>
+          <Text style={styles.sectionTitle}>Large stream upload</Text>
           <Text style={styles.subtitle}>
-            Generate a 20 MiB byte stream, spool it to the cache, and upload it
-            with the native Expo file task.
+            Upload a generated 20 MiB stream without loading the full file into
+            memory.
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -281,7 +281,7 @@ export default function App() {
             }}
             style={[styles.button, isUploading ? styles.buttonDisabled : null]}
           >
-            <Text style={styles.buttonLabel}>Upload 20 MiB stream</Text>
+            <Text style={styles.buttonLabel}>Upload demo stream</Text>
           </Pressable>
           {isUploading ? (
             <Pressable
