@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@wiro-ai/wirokit-react-native": "workspace:*",
-    "expo": "~54.0.37",
+    "expo": "~57.0.19",
     "expo-file-system": "~19.0.24",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
