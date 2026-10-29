@@ -4,7 +4,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react-native';
-import { WiroKitInfo } from '@wiro-ai/wirokit-react-native';
+import { WiroSdkInfo } from '@wiro-ai/wiro-react-native';
 
 import App from '../App';
 
@@ -14,7 +14,7 @@ describe('App', () => {
 
     expect(screen.getByText('Wiro Image Generation')).toBeOnTheScreen();
     expect(
-      screen.getByText(`Version ${WiroKitInfo.version} · FLUX.2 Pro`),
+      screen.getByText(`Version ${WiroSdkInfo.version} · FLUX.2 Pro`),
     ).toBeOnTheScreen();
     expect(screen.getByText('Generate image')).toBeOnTheScreen();
     expect(screen.getByText('Upload demo stream')).toBeOnTheScreen();

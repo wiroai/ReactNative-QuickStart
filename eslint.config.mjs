@@ -23,8 +23,8 @@ export default [
   {
     files: [
       'apps/example/App.tsx',
-      'packages/wirokit/scripts/verify-exports.mjs',
-      'packages/wirokit/test-d/exports.ts',
+      'packages/wiro-react-native/scripts/verify-exports.mjs',
+      'packages/wiro-react-native/test-d/exports.ts',
     ],
     rules: {
       'import/no-unresolved': 'off',

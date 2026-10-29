@@ -1,19 +1,19 @@
-# @wiro-ai/wirokit-react-native
+# @wiro-ai/wiro-react-native
 
-Type-safe Wiro SDK for React Native and Expo Go on iOS and Android.
+Official [Wiro AI](https://wiro.ai) SDK for React Native and Expo Go on iOS and Android: run image, video, audio and LLM models with typed requests and live task tracking.
 
 ## Installation
 
 ```sh
-npm install @wiro-ai/wirokit-react-native
+npm install @wiro-ai/wiro-react-native
 ```
 
 ```sh
-yarn add @wiro-ai/wirokit-react-native
+yarn add @wiro-ai/wiro-react-native
 ```
 
 ```sh
-pnpm add @wiro-ai/wirokit-react-native
+pnpm add @wiro-ai/wiro-react-native
 ```
 
 Install the Expo FileSystem peer with the version selected for your Expo SDK:
@@ -32,7 +32,7 @@ import {
   Wiro,
   WiroClient,
   WiroFlux2ProOutputFormat,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 
 const client = new WiroClient({ apiKey: 'your-api-key' });
 
@@ -108,7 +108,7 @@ import {
   WiroGptImage2Quality,
   WiroGptImage2Ratio,
   WiroGptImage2Resolution,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 
 const result = await client.subscribe(
   Wiro.gptImage2({

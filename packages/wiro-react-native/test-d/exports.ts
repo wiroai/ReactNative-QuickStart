@@ -1,5 +1,5 @@
 import {
-  WIROKIT_VERSION,
+  WIRO_SDK_VERSION,
   ExpoWiroStreamUploadTransport,
   WiroBytesFileContent,
   Wiro,
@@ -13,7 +13,7 @@ import {
   WiroGptImage2Quality,
   WiroGptImage2Ratio,
   WiroGptImage2Resolution,
-  WiroKitInfo,
+  WiroSdkInfo,
   type WiroModel,
   WiroModelId,
   type WiroModelSchema,
@@ -36,10 +36,10 @@ import {
   type WiroUploadResult,
   WiroValue,
   type WiroValue as WiroValueType,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 
-const version: string = WIROKIT_VERSION;
-const infoVersion: typeof WIROKIT_VERSION = WiroKitInfo.version;
+const version: string = WIRO_SDK_VERSION;
+const infoVersion: typeof WIRO_SDK_VERSION = WiroSdkInfo.version;
 const modelId = new WiroModelId('owner', 'project');
 const fileInput: WiroFileInputType = WiroFileInput.uri('file:///image.png');
 const value: WiroValueType = WiroValue.fileInput(fileInput);

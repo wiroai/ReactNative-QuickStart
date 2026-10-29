@@ -171,7 +171,7 @@ class FakeExpoFileSystem {
   private fileSystemModule(): object {
     const runtime = this;
     class Directory {
-      readonly uri = 'file:///cache/wirokit-test';
+      readonly uri = 'file:///cache/wiro-test';
       exists = true;
 
       create(): void {}
@@ -186,7 +186,7 @@ class FakeExpoFileSystem {
 
       constructor(_directory: Directory, fileName: string) {
         runtime.fileName = fileName;
-        this.uri = `file:///cache/wirokit-test/${fileName}`;
+        this.uri = `file:///cache/wiro-test/${fileName}`;
       }
 
       create(): void {}

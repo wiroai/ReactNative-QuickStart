@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 import {
-  WIROKIT_VERSION as importedVersion,
+  WIRO_SDK_VERSION as importedVersion,
   ExpoWiroFileContentSource,
   ExpoWiroSocketSessionFactory,
   ExpoWiroStreamUploadTransport,
@@ -12,7 +12,7 @@ import {
   WiroFlux2ProOutputFormat,
   WiroFlux2ProRequest,
   WiroGptImage2Resolution,
-  WiroKitInfo as importedInfo,
+  WiroSdkInfo as importedInfo,
   WiroModelId,
   WiroModelSchema,
   WiroModelSort,
@@ -27,16 +27,16 @@ import {
   WiroUploadResult,
   WiroValidationError,
   WiroValue,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 
 const require = createRequire(import.meta.url);
-const requiredSdk = require('@wiro-ai/wirokit-react-native');
+const requiredSdk = require('@wiro-ai/wiro-react-native');
 const packageJson = require('../package.json');
 
 assert.equal(importedVersion, packageJson.version);
 assert.equal(importedInfo.version, importedVersion);
-assert.equal(requiredSdk.WIROKIT_VERSION, importedVersion);
-assert.equal(requiredSdk.WiroKitInfo.version, importedVersion);
+assert.equal(requiredSdk.WIRO_SDK_VERSION, importedVersion);
+assert.equal(requiredSdk.WiroSdkInfo.version, importedVersion);
 assert.equal(new WiroModelId('owner', 'project').slug, 'owner/project');
 assert.equal(WiroValue.numberLexeme('1.2300').rawValue, '1.2300');
 assert.ok(new WiroValidationError('Invalid.') instanceof Error);

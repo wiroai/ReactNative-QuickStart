@@ -130,7 +130,7 @@ export class WiroStreamUploadTransportImpl implements WiroStreamUploadTransport 
 
     const directory = new fileSystem.Directory(
       fileSystem.Paths.cache,
-      `wirokit-upload-${uniqueSuffix()}`,
+      `wiro-upload-${uniqueSuffix()}`,
     );
     directory.create({ intermediates: true });
     const file = new fileSystem.File(directory, request.fileName);

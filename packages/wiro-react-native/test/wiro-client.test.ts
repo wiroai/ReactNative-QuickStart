@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  WIROKIT_VERSION,
+  WIRO_SDK_VERSION,
   WiroAuthType,
   WiroClient,
   WiroClientLimits,
@@ -82,14 +82,14 @@ describe('WiroClient authentication and configuration', () => {
     expect(request?.body).toBe('{"search":"image"}');
     expect(request?.headers).toMatchObject({
       'Content-Type': 'application/json',
-      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
+      'User-Agent': `wiro-react-native/${WIRO_SDK_VERSION}`,
       'x-api-key': 'test-api-key',
     });
     expect(request?.headers['x-nonce']).toBeUndefined();
     expect(request?.headers['x-signature']).toBeUndefined();
     expect(request?.timeoutMs).toBe(30_000);
     expect(client.authType).toBe(WiroAuthType.apiKey);
-    expect(makeWiroUserAgent()).toBe(`WiroKit-ReactNative/${WIROKIT_VERSION}`);
+    expect(makeWiroUserAgent()).toBe(`wiro-react-native/${WIRO_SDK_VERSION}`);
   });
 
   it('builds signature headers from the shared contract vector', async () => {
@@ -160,7 +160,7 @@ describe('WiroClient authentication and configuration', () => {
     expect(transport.requests[0]?.headers).toMatchObject({
       Authorization: 'Bearer proxy-secret',
       'Content-Type': 'application/json',
-      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
+      'User-Agent': `wiro-react-native/${WIRO_SDK_VERSION}`,
     });
     expect(transport.requests[0]?.headers['x-api-key']).toBeUndefined();
     expect(transport.requests[0]?.headers['user-agent']).toBeUndefined();

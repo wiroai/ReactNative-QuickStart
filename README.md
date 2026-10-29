@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/wiroai/ReactNative-QuickStart/main/.github/assets/wiro-logo.png" alt="Wiro AI" width="240">
 
-# WiroKit for React Native: TypeScript SDK for the Wiro AI API
+# Wiro AI SDK for React Native and Expo
 
 Run image, video, audio and LLM models from React Native and Expo apps in TypeScript with the Wiro AI API: typed requests, live task tracking and file uploads.
 
@@ -12,7 +12,7 @@ Run image, video, audio and LLM models from React Native and Expo apps in TypeSc
 
 </div>
 
-WiroKit for React Native is the official TypeScript library for calling the
+`@wiro-ai/wiro-react-native` is the official TypeScript library for calling the
 [Wiro AI](https://wiro.ai) model API from React Native and Expo apps,
 including Expo Go. It runs any model in the Wiro AI catalog, through typed
 request factories for popular image, video and music models or through
@@ -43,15 +43,15 @@ WebSocket. Uploads accept bytes, Blobs, streams and Expo picker URIs.
 ## Installation
 
 ```sh
-npm install @wiro-ai/wirokit-react-native
+npm install @wiro-ai/wiro-react-native
 ```
 
 ```sh
-yarn add @wiro-ai/wirokit-react-native
+yarn add @wiro-ai/wiro-react-native
 ```
 
 ```sh
-pnpm add @wiro-ai/wirokit-react-native
+pnpm add @wiro-ai/wiro-react-native
 ```
 
 ```sh
@@ -65,7 +65,7 @@ import {
   Wiro,
   WiroClient,
   WiroFlux2ProOutputFormat,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 
 const client = new WiroClient({ apiKey: 'your-api-key' });
 
@@ -123,32 +123,32 @@ API key in proxy mode.
 
 ## Which call do I need?
 
-| I want to... | Call |
-| --- | --- |
-| Generate with a supported model | `client.subscribe(Wiro.flux2Pro(...))` |
-| Run any other model | `client.subscribe(Wiro.model("owner/project", ...))` |
-| Fire-and-forget then wait | `run` / `runModel`, then `waitForTask` |
-| Stream live status updates | `subscribeStream(...)` |
-| Find a model | `searchModels` / `explore` |
-| Inspect parameters | `getModelSchema`, then `schema.validate` |
-| Send bytes / Blob | `WiroFileInput.bytes(...)` / `.blob(...)` |
-| Send an Expo picker URI | `WiroFileInput.uri(...)` |
-| Stop work | `AbortSignal`, or `cancelTask` / `killTask` |
+| I want to...                    | Call                                                 |
+| ------------------------------- | ---------------------------------------------------- |
+| Generate with a supported model | `client.subscribe(Wiro.flux2Pro(...))`               |
+| Run any other model             | `client.subscribe(Wiro.model("owner/project", ...))` |
+| Fire-and-forget then wait       | `run` / `runModel`, then `waitForTask`               |
+| Stream live status updates      | `subscribeStream(...)`                               |
+| Find a model                    | `searchModels` / `explore`                           |
+| Inspect parameters              | `getModelSchema`, then `schema.validate`             |
+| Send bytes / Blob               | `WiroFileInput.bytes(...)` / `.blob(...)`            |
+| Send an Expo picker URI         | `WiroFileInput.uri(...)`                             |
+| Stop work                       | `AbortSignal`, or `cancelTask` / `killTask`          |
 
 ## Typed and dynamic requests
 
-| Category | Models |
-| --- | --- |
-| Image | FLUX.2 Pro, GPT Image 2, Nano Banana Pro, Seedream v4, Grok Imagine Image |
-| Video | Runway Gen-4.5, Seedance 2.0, Kling V3, Veo 3.1, Sora 2 Pro, Hailuo 2.3 Fast, Grok Imagine Video |
-| Music | Lyria 3 |
+| Category | Models                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| Image    | FLUX.2 Pro, GPT Image 2, Nano Banana Pro, Seedream v4, Grok Imagine Image                        |
+| Video    | Runway Gen-4.5, Seedance 2.0, Kling V3, Veo 3.1, Sora 2 Pro, Hailuo 2.3 Fast, Grok Imagine Video |
+| Music    | Lyria 3                                                                                          |
 
 ```ts
 import {
   Wiro,
   WiroFlux2ProOutputFormat,
   WiroValue,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 
 // Typed
 const request = Wiro.flux2Pro({
@@ -236,10 +236,10 @@ client.close();
 
 ## Workspace
 
-- `packages/wirokit`: publishable `@wiro-ai/wirokit-react-native` package
+- `packages/wiro-react-native`: publishable `@wiro-ai/wiro-react-native` package
 - `apps/example`: Expo Go-compatible iOS and Android example
 
-Package reference: [`packages/wirokit/README.md`](packages/wirokit/README.md)
+Package reference: [`packages/wiro-react-native/README.md`](packages/wiro-react-native/README.md)
 
 ## Example app
 
@@ -256,7 +256,7 @@ development.
 
 - Product docs: [https://wiro.ai/docs](https://wiro.ai/docs)
 - Available models: [https://wiro.ai/models](https://wiro.ai/models)
-- Package guide: [`packages/wirokit/README.md`](packages/wirokit/README.md)
+- Package guide: [`packages/wiro-react-native/README.md`](packages/wiro-react-native/README.md)
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)
 - Security policy: [`SECURITY.md`](SECURITY.md)
 - Contributing guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
@@ -277,19 +277,19 @@ pnpm verify:exports
 
 ## More from Wiro AI
 
-| Repository | What it is |
-| --- | --- |
-| [Wiro-MCP](https://github.com/wiroai/Wiro-MCP) | Official MCP server for Wiro AI (`@wiro-ai/wiro-mcp`) |
-| [Wiro-Plugin](https://github.com/wiroai/Wiro-Plugin) | Wiro AI plugin for Cursor, Claude Code, Gemini CLI and Devin |
-| [Swift-QuickStart](https://github.com/wiroai/Swift-QuickStart) | WiroKit, the Wiro AI SDK for iOS |
-| [Kotlin-QuickStart](https://github.com/wiroai/Kotlin-QuickStart) | WiroKit, the Wiro AI SDK for Android |
-| [Dart-QuickStart](https://github.com/wiroai/Dart-QuickStart) | Wiro AI SDK for Dart and Flutter |
-| [Swift-Realtime](https://github.com/wiroai/Swift-Realtime) | Realtime voice AI example for iOS |
-| [Kotlin-Realtime](https://github.com/wiroai/Kotlin-Realtime) | Realtime voice AI example for Android |
-| [Dart-Realtime](https://github.com/wiroai/Dart-Realtime) | Realtime voice AI example for Flutter |
-| [ReactNative-Realtime](https://github.com/wiroai/ReactNative-Realtime) | Realtime voice AI example for React Native |
-| [n8n-nodes-wiroai](https://github.com/wiroai/n8n-nodes-wiroai) | Wiro AI nodes for n8n |
-| [Wiro-Docs](https://github.com/wiroai/Wiro-Docs) | Source of the Wiro AI API docs |
+| Repository                                                             | What it is                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [Wiro-MCP](https://github.com/wiroai/Wiro-MCP)                         | Official MCP server for Wiro AI (`@wiro-ai/wiro-mcp`)        |
+| [Wiro-Plugin](https://github.com/wiroai/Wiro-Plugin)                   | Wiro AI plugin for Cursor, Claude Code, Gemini CLI and Devin |
+| [Swift-QuickStart](https://github.com/wiroai/Swift-QuickStart)         | WiroKit, the Wiro AI SDK for iOS                             |
+| [Kotlin-QuickStart](https://github.com/wiroai/Kotlin-QuickStart)       | WiroKit, the Wiro AI SDK for Android                         |
+| [Dart-QuickStart](https://github.com/wiroai/Dart-QuickStart)           | Wiro AI SDK for Dart and Flutter                             |
+| [Swift-Realtime](https://github.com/wiroai/Swift-Realtime)             | Realtime voice AI example for iOS                            |
+| [Kotlin-Realtime](https://github.com/wiroai/Kotlin-Realtime)           | Realtime voice AI example for Android                        |
+| [Dart-Realtime](https://github.com/wiroai/Dart-Realtime)               | Realtime voice AI example for Flutter                        |
+| [ReactNative-Realtime](https://github.com/wiroai/ReactNative-Realtime) | Realtime voice AI example for React Native                   |
+| [n8n-nodes-wiroai](https://github.com/wiroai/n8n-nodes-wiroai)         | Wiro AI nodes for n8n                                        |
+| [Wiro-Docs](https://github.com/wiroai/Wiro-Docs)                       | Source of the Wiro AI API docs                               |
 
 [Website](https://wiro.ai) · [Models](https://wiro.ai/models) · [Docs](https://wiro.ai/docs) · [X](https://x.com/wiroai)
 

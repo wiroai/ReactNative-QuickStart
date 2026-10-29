@@ -1,19 +1,19 @@
 {
   "expo": {
-    "name": "WiroKit Example",
-    "slug": "wirokit-react-native-example",
+    "name": "Wiro AI Example",
+    "slug": "wiro-react-native-example",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["ios", "android"],
     "ios": {
-      "bundleIdentifier": "ai.wiro.wirokit.example",
+      "bundleIdentifier": "ai.wiro.reactnative.example",
       "supportsTablet": true
     },
     "android": {
       "edgeToEdgeEnabled": true,
-      "package": "ai.wiro.wirokit.example",
+      "package": "ai.wiro.reactnative.example",
       "predictiveBackGestureEnabled": false
     }
   }

@@ -1,8 +1,8 @@
 {
-  "name": "wirokit-react-native-workspace",
+  "name": "wiro-react-native-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "WiroKit React Native SDK and Expo example workspace",
+  "description": "Wiro AI React Native SDK and Expo example workspace",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -13,16 +13,16 @@
     "node": ">=22.14.0"
   },
   "scripts": {
-    "build": "corepack pnpm --filter @wiro-ai/wirokit-react-native build",
+    "build": "corepack pnpm --filter @wiro-ai/wiro-react-native build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "corepack pnpm -r --if-present typecheck",
     "test": "corepack pnpm -r --if-present test",
-    "test:coverage": "corepack pnpm --filter @wiro-ai/wirokit-react-native test:coverage",
-    "pack:dry-run": "corepack pnpm --filter @wiro-ai/wirokit-react-native pack --dry-run",
-    "verify:exports": "corepack pnpm --filter @wiro-ai/wirokit-react-native verify:exports",
-    "verify:hmac:hermes": "corepack pnpm --filter @wiro-ai/wirokit-react-native verify:hmac:hermes",
+    "test:coverage": "corepack pnpm --filter @wiro-ai/wiro-react-native test:coverage",
+    "pack:dry-run": "corepack pnpm --filter @wiro-ai/wiro-react-native pack --dry-run",
+    "verify:exports": "corepack pnpm --filter @wiro-ai/wiro-react-native verify:exports",
+    "verify:hmac:hermes": "corepack pnpm --filter @wiro-ai/wiro-react-native verify:hmac:hermes",
     "expo:config": "corepack pnpm --filter @wiro-ai/example expo:config",
     "expo:export:ios": "corepack pnpm --filter @wiro-ai/example expo:export:ios",
     "expo:export:android": "corepack pnpm --filter @wiro-ai/example expo:export:android"

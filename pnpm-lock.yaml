@@ -38,9 +38,9 @@ importers:
 
   apps/example:
     dependencies:
-      '@wiro-ai/wirokit-react-native':
+      '@wiro-ai/wiro-react-native':
         specifier: workspace:*
-        version: link:../../packages/wirokit
+        version: link:../../packages/wiro-react-native
       expo:
         specifier: ~54.0.37
         version: 54.0.37(@babel/core@7.29.7(supports-color@8.1.1))(react-native@0.81.5(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.1.17)(react@19.1.0)(supports-color@8.1.1))(react@19.1.0)(supports-color@8.1.1)(typescript@5.9.3)
@@ -79,7 +79,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(@types/react@19.1.17)(react@19.1.0)
 
-  packages/wirokit:
+  packages/wiro-react-native:
     dependencies:
       '@noble/hashes':
         specifier: ^2.3.0

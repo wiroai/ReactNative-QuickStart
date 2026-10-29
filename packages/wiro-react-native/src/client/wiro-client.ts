@@ -114,7 +114,7 @@ import {
   type WiroSocketSession,
   type WiroSocketSessionFactory,
 } from '../transport/socket-session';
-import { WIROKIT_VERSION } from '../wiro-kit-info';
+import { WIRO_SDK_VERSION } from '../wiro-sdk-info';
 
 interface WiroClientCommonOptions {
   readonly closeTransportOnClose?: boolean;
@@ -1166,7 +1166,7 @@ export function createWiroClientForTests(
 }
 
 export function makeWiroUserAgent(): string {
-  return `WiroKit-ReactNative/${WIROKIT_VERSION}`;
+  return `wiro-react-native/${WIRO_SDK_VERSION}`;
 }
 
 export function isRetryablePath(path: string): boolean {

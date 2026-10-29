@@ -30,7 +30,7 @@ const transformClasses = require(
   }),
 ).default;
 const { build } = await import(pathToFileURL(esbuildModule).href);
-const temporaryDirectory = await mkdtemp(join(tmpdir(), 'wirokit-hermes-'));
+const temporaryDirectory = await mkdtemp(join(tmpdir(), 'wiro-hermes-'));
 const bundlePath = join(temporaryDirectory, 'hmac-smoke.js');
 
 const platformDirectory = {

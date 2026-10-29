@@ -251,4 +251,4 @@ export {
   type WiroSocketSession,
   type WiroSocketSessionFactory,
 } from './transport/socket-session';
-export { WIROKIT_VERSION, WiroKitInfo } from './wiro-kit-info';
+export { WIRO_SDK_VERSION, WiroSdkInfo } from './wiro-sdk-info';

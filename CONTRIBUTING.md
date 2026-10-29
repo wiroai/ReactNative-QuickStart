@@ -43,7 +43,7 @@ The example app tests run as part of `pnpm test`.
 
 ## Releases
 
-The package version and `WIROKIT_VERSION` must match; export verification
+The package version and `WIRO_SDK_VERSION` must match; export verification
 enforces this contract. Publish a GitHub Release whose tag is
 `v<package-version>`. The release workflow runs all checks and publishes the
 package with npm provenance.

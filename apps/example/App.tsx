@@ -3,12 +3,12 @@ import {
   WiroClient,
   WiroError,
   WiroFlux2ProOutputFormat,
-  WiroKitInfo,
+  WiroSdkInfo,
   WiroTaskFailure,
   type WiroTaskOutput,
   WiroTaskSuccess,
   type WiroStreamUploadProgress,
-} from '@wiro-ai/wirokit-react-native';
+} from '@wiro-ai/wiro-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -234,7 +234,7 @@ export default function App() {
         <Text style={styles.eyebrow}>WIRO SDK</Text>
         <Text style={styles.title}>Wiro Image Generation</Text>
         <Text style={styles.version}>
-          Version {WiroKitInfo.version} · FLUX.2 Pro
+          Version {WiroSdkInfo.version} · FLUX.2 Pro
         </Text>
         <Text style={styles.subtitle}>
           Describe an image and generate it with Wiro.

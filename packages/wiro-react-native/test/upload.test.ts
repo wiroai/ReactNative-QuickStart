@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  WIROKIT_VERSION,
+  WIRO_SDK_VERSION,
   ExpoWiroFileContentSource,
   WiroBytesFileContent,
   type WiroByteStream,
@@ -57,7 +57,7 @@ describe('WiroClient uploads', () => {
     const request = transport.requests[0];
     expect(request?.url).toBe('https://api.wiro.ai/v1/File/Upload');
     expect(request?.headers).toMatchObject({
-      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
+      'User-Agent': `wiro-react-native/${WIRO_SDK_VERSION}`,
       'x-api-key': 'test-api-key',
     });
     expect(request?.headers['Content-Type']).toMatch(
@@ -147,7 +147,7 @@ describe('WiroClient uploads', () => {
       url: 'https://api.wiro.ai/v1/File/Upload',
     });
     expect(streamTransport.requests[0]?.headers).toMatchObject({
-      'User-Agent': `WiroKit-ReactNative/${WIROKIT_VERSION}`,
+      'User-Agent': `wiro-react-native/${WIRO_SDK_VERSION}`,
       'x-api-key': 'test-api-key',
     });
     expect(streamTransport.requests[0]?.headers).not.toHaveProperty(

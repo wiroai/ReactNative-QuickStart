@@ -1,18 +1,26 @@
 {
-  "name": "@wiro-ai/wirokit-react-native",
+  "name": "@wiro-ai/wiro-react-native",
   "version": "0.1.0",
-  "description": "Type-safe Wiro SDK for React Native and Expo",
+  "description": "Official Wiro AI SDK for React Native and Expo: run image, video, audio and LLM models with typed requests and live task tracking",
   "keywords": [
     "wiro",
+    "wiro-ai",
     "react-native",
     "expo",
-    "sdk"
+    "sdk",
+    "ai",
+    "generative-ai",
+    "image-generation",
+    "video-generation",
+    "text-to-speech",
+    "llm",
+    "typescript"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wiroai/ReactNative-QuickStart.git",
-    "directory": "packages/wirokit"
+    "directory": "packages/wiro-react-native"
   },
   "homepage": "https://github.com/wiroai/ReactNative-QuickStart#readme",
   "bugs": {

@@ -7,7 +7,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "pretest": "corepack pnpm --filter @wiro-ai/wirokit-react-native build",
+    "pretest": "corepack pnpm --filter @wiro-ai/wiro-react-native build",
     "test": "jest --runInBand",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "expo:config": "expo config --type public",
@@ -15,7 +15,7 @@
     "expo:export:android": "expo export --platform android --output-dir dist/android"
   },
   "dependencies": {
-    "@wiro-ai/wirokit-react-native": "workspace:*",
+    "@wiro-ai/wiro-react-native": "workspace:*",
     "expo": "~54.0.37",
     "expo-file-system": "~19.0.24",
     "expo-status-bar": "~3.0.9",

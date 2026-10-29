@@ -35,7 +35,7 @@ jobs:
       - name: Verify release tag
         run: |
           package_version="$(node -p \
-            "require('./packages/wirokit/package.json').version")"
+            "require('./packages/wiro-react-native/package.json').version")"
           test "${GITHUB_REF_NAME}" = "v${package_version}"
 
       - name: Run release checks
@@ -54,5 +54,5 @@ jobs:
           pnpm pack:dry-run
 
       - name: Publish package
-        working-directory: packages/wirokit
+        working-directory: packages/wiro-react-native
         run: npm publish --access public
