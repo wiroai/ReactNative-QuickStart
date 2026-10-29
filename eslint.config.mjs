@@ -23,6 +23,7 @@ export default [
   {
     files: [
       'apps/example/App.tsx',
+      'apps/example/test/App.test.tsx',
       'packages/wiro-react-native/scripts/verify-exports.mjs',
       'packages/wiro-react-native/test-d/exports.ts',
     ],
