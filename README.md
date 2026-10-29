@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://wiro.ai/images/favicon/icon-512x512.png" alt="Wiro AI" width="100">
+<img src="https://raw.githubusercontent.com/wiroai/ReactNative-QuickStart/main/.github/assets/wiro-logo.png" alt="Wiro AI" width="240">
 
 # WiroKit for React Native: TypeScript SDK for the Wiro AI API
 
