@@ -8,7 +8,7 @@ Run image, video, audio and LLM models from React Native and Expo apps in TypeSc
 
 [![npm](https://img.shields.io/npm/v/@wiro-ai/wiro-react-native?style=for-the-badge&color=111111&logo=npm&logoColor=white)](https://www.npmjs.com/package/@wiro-ai/wiro-react-native) [![React Native 0.76+](https://img.shields.io/badge/React%20Native-0.76%2B-111111?style=for-the-badge&color=111111&logo=react&logoColor=white)](https://reactnative.dev) [![Expo SDK 54+](https://img.shields.io/badge/Expo%20SDK-54%2B-111111?style=for-the-badge&color=111111&logo=expo&logoColor=white)](https://expo.dev) [![CI](https://img.shields.io/github/actions/workflow/status/wiroai/ReactNative-QuickStart/ci.yml?branch=main&style=for-the-badge&color=111111&label=CI&logo=githubactions&logoColor=white)](https://github.com/wiroai/ReactNative-QuickStart/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=for-the-badge&color=111111)](LICENSE)
 
-[Website](https://wiro.ai) · [Models](https://wiro.ai/models) · [Docs](https://wiro.ai/docs/code-examples) · [Dashboard](https://wiro.ai/panel)
+[Website](https://wiro.ai) · [Models](https://wiro.ai/models) · [Docs](https://wiro.ai/docs/code-examples) · [Dashboard](https://wiro.ai/panel) · [npm](https://www.npmjs.com/package/@wiro-ai/wiro-react-native)
 
 </div>
 
@@ -277,19 +277,19 @@ pnpm verify:exports
 
 ## More from Wiro AI
 
-| Repository                                                             | What it is                                                   |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [Wiro-MCP](https://github.com/wiroai/Wiro-MCP)                         | Official MCP server for Wiro AI (`@wiro-ai/wiro-mcp`)        |
-| [Wiro-Plugin](https://github.com/wiroai/Wiro-Plugin)                   | Wiro AI plugin for Cursor, Claude Code, Gemini CLI and Devin |
-| [Swift-QuickStart](https://github.com/wiroai/Swift-QuickStart)         | WiroKit, the Wiro AI SDK for iOS                             |
-| [Kotlin-QuickStart](https://github.com/wiroai/Kotlin-QuickStart)       | WiroKit, the Wiro AI SDK for Android                         |
-| [Dart-QuickStart](https://github.com/wiroai/Dart-QuickStart)           | Wiro AI SDK for Dart and Flutter (`wiro` on pub.dev)         |
-| [Swift-Realtime](https://github.com/wiroai/Swift-Realtime)             | Realtime voice AI example for iOS                            |
-| [Kotlin-Realtime](https://github.com/wiroai/Kotlin-Realtime)           | Realtime voice AI example for Android                        |
-| [Dart-Realtime](https://github.com/wiroai/Dart-Realtime)               | Realtime voice AI example for Flutter                        |
-| [ReactNative-Realtime](https://github.com/wiroai/ReactNative-Realtime) | Realtime voice AI example for React Native                   |
-| [n8n-nodes-wiroai](https://github.com/wiroai/n8n-nodes-wiroai)         | Wiro AI nodes for n8n                                        |
-| [Wiro-Docs](https://github.com/wiroai/Wiro-Docs)                       | Source of the Wiro AI API docs                               |
+| Repository                                                             | What it is                                                                                                           |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [Wiro-MCP](https://github.com/wiroai/Wiro-MCP)                         | Official MCP server for Wiro AI, [`@wiro-ai/wiro-mcp` on npm](https://www.npmjs.com/package/@wiro-ai/wiro-mcp)       |
+| [Wiro-Plugin](https://github.com/wiroai/Wiro-Plugin)                   | Wiro AI plugin for Cursor, Claude Code, Gemini CLI and Devin                                                         |
+| [Swift-QuickStart](https://github.com/wiroai/Swift-QuickStart)         | WiroKit, the Wiro AI SDK for iOS                                                                                     |
+| [Kotlin-QuickStart](https://github.com/wiroai/Kotlin-QuickStart)       | WiroKit, the Wiro AI SDK for Android                                                                                 |
+| [Dart-QuickStart](https://github.com/wiroai/Dart-QuickStart)           | Wiro AI SDK for Dart and Flutter, [`wiro` on pub.dev](https://pub.dev/packages/wiro)                                 |
+| [Swift-Realtime](https://github.com/wiroai/Swift-Realtime)             | Realtime voice AI example for iOS                                                                                    |
+| [Kotlin-Realtime](https://github.com/wiroai/Kotlin-Realtime)           | Realtime voice AI example for Android                                                                                |
+| [Dart-Realtime](https://github.com/wiroai/Dart-Realtime)               | Realtime voice AI example for Flutter                                                                                |
+| [ReactNative-Realtime](https://github.com/wiroai/ReactNative-Realtime) | Realtime voice AI example for React Native                                                                           |
+| [n8n-nodes-wiroai](https://github.com/wiroai/n8n-nodes-wiroai)         | Wiro AI nodes for n8n, [`@wiro-ai/n8n-nodes-wiroai` on npm](https://www.npmjs.com/package/@wiro-ai/n8n-nodes-wiroai) |
+| [Wiro-Docs](https://github.com/wiroai/Wiro-Docs)                       | Source of the Wiro AI API docs                                                                                       |
 
 [Website](https://wiro.ai) · [Models](https://wiro.ai/models) · [Docs](https://wiro.ai/docs) · [X](https://x.com/wiroai)
 
