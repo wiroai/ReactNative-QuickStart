@@ -29,8 +29,6 @@ import {
   WiroSeedance20Ratio,
   WiroSeedance20Resolution,
   WiroSeedreamV4Size,
-  WiroSora2ProRatio,
-  WiroSora2ProResolution,
   WiroVeo31Ratio,
   WiroVeo31Resolution,
   stringifyWiroJson,
@@ -46,7 +44,6 @@ import nanoBananaProFixture from './fixtures/wire/requests/nano_banana_pro.json'
 import runwayGen45Fixture from './fixtures/wire/requests/runway_gen45.json';
 import seedance20Fixture from './fixtures/wire/requests/seedance_20.json';
 import seedreamV4Fixture from './fixtures/wire/requests/seedream_v4.json';
-import sora2ProFixture from './fixtures/wire/requests/sora2_pro.json';
 import veo31Fixture from './fixtures/wire/requests/veo31.json';
 import { FakeHttpTransport } from './support/fake-http-transport';
 
@@ -168,17 +165,6 @@ describe('typed request wire contracts', () => {
       'google/veo3-1',
     ],
     [
-      Wiro.sora2Pro({
-        inputImages: [image],
-        prompt: 'city',
-        ratio: WiroSora2ProRatio.landscape16x9,
-        resolution: WiroSora2ProResolution.r1080p,
-        seconds: 8,
-      }),
-      sora2ProFixture,
-      'openai/sora-2-pro',
-    ],
-    [
       Wiro.hailuo23Fast({
         duration: 6,
         inputImage: image,
@@ -273,7 +259,6 @@ describe('typed request omission and encoding', () => {
       ['mode', 'duration', 'ratio', 'sound', 'multiPrompt'],
     ],
     [Wiro.veo31({ durationSeconds: 4 }), ['durationSeconds']],
-    [Wiro.sora2Pro({ prompt: 'p', seconds: 4 }), ['prompt', 'seconds']],
     [
       Wiro.hailuo23Fast({
         duration: 6,
@@ -463,7 +448,6 @@ describe('typed request validation', () => {
         sound: true,
       }),
     () => Wiro.veo31({ durationSeconds: 5 }),
-    () => Wiro.sora2Pro({ prompt: 'p', seconds: 7 }),
     () =>
       Wiro.hailuo23Fast({
         duration: 10,
@@ -593,7 +577,6 @@ describe('typed request validation', () => {
         durationSeconds: 4,
         seed: -1,
       }),
-    () => Wiro.sora2Pro({ prompt: '', seconds: 4 }),
     () =>
       Wiro.hailuo23Fast({
         duration: 7,
@@ -687,8 +670,6 @@ describe('typed enum catalogs', () => {
       seedanceRatio: Object.values(WiroSeedance20Ratio),
       seedanceResolution: Object.values(WiroSeedance20Resolution),
       seedream: Object.values(WiroSeedreamV4Size),
-      soraRatio: Object.values(WiroSora2ProRatio),
-      soraResolution: Object.values(WiroSora2ProResolution),
       veoRatio: Object.values(WiroVeo31Ratio),
       veoResolution: Object.values(WiroVeo31Resolution),
     };
@@ -843,16 +824,6 @@ describe('typed enum catalogs', () => {
           "1664x2496",
           "1728x2304",
           "2048x2048",
-        ],
-        "soraRatio": [
-          "auto",
-          "16:9",
-          "9:16",
-        ],
-        "soraResolution": [
-          "1024p",
-          "1080p",
-          "720p",
         ],
         "veoRatio": [
           "16:9",

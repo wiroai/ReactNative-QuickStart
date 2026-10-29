@@ -137,11 +137,11 @@ API key in proxy mode.
 
 ## Typed and dynamic requests
 
-| Category | Models                                                                                           |
-| -------- | ------------------------------------------------------------------------------------------------ |
-| Image    | FLUX.2 Pro, GPT Image 2, Nano Banana Pro, Seedream v4, Grok Imagine Image                        |
-| Video    | Runway Gen-4.5, Seedance 2.0, Kling V3, Veo 3.1, Sora 2 Pro, Hailuo 2.3 Fast, Grok Imagine Video |
-| Music    | Lyria 3                                                                                          |
+| Category | Models                                                                               |
+| -------- | ------------------------------------------------------------------------------------ |
+| Image    | FLUX.2 Pro, GPT Image 2, Nano Banana Pro, Seedream v4, Grok Imagine Image            |
+| Video    | Runway Gen-4.5, Seedance 2.0, Kling V3, Veo 3.1, Hailuo 2.3 Fast, Grok Imagine Video |
+| Music    | Lyria 3                                                                              |
 
 ```ts
 import {

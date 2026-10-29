@@ -57,7 +57,6 @@ assert.equal(typeof Wiro.runwayGen45, 'function');
 assert.equal(typeof Wiro.seedance20, 'function');
 assert.equal(typeof Wiro.klingV3, 'function');
 assert.equal(typeof Wiro.veo31, 'function');
-assert.equal(typeof Wiro.sora2Pro, 'function');
 assert.equal(typeof Wiro.hailuo23Fast, 'function');
 assert.equal(typeof Wiro.grokImagineVideo, 'function');
 assert.equal(typeof Wiro.lyria3, 'function');

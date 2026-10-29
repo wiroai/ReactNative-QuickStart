@@ -211,22 +211,6 @@ export const WiroVeo31Resolution = enumValues({
 export type WiroVeo31Resolution =
   (typeof WiroVeo31Resolution)[keyof typeof WiroVeo31Resolution];
 
-export const WiroSora2ProResolution = enumValues({
-  r1024p: '1024p',
-  r1080p: '1080p',
-  r720p: '720p',
-});
-export type WiroSora2ProResolution =
-  (typeof WiroSora2ProResolution)[keyof typeof WiroSora2ProResolution];
-
-export const WiroSora2ProRatio = enumValues({
-  auto: 'auto',
-  landscape16x9: '16:9',
-  portrait9x16: '9:16',
-});
-export type WiroSora2ProRatio =
-  (typeof WiroSora2ProRatio)[keyof typeof WiroSora2ProRatio];
-
 export const WiroHailuo23FastResolution = enumValues({
   r1080p: '1080P',
   r768p: '768P',

@@ -25,8 +25,6 @@ import {
   type WiroSeedance20RequestOptions,
   WiroSeedreamV4Request,
   type WiroSeedreamV4RequestOptions,
-  WiroSora2ProRequest,
-  type WiroSora2ProRequestOptions,
   WiroVeo31Request,
   type WiroVeo31RequestOptions,
 } from './typed-requests';
@@ -101,9 +99,6 @@ export const Wiro = Object.freeze({
   },
   seedreamV4(options: WiroSeedreamV4RequestOptions): WiroSeedreamV4Request {
     return new WiroSeedreamV4Request(options);
-  },
-  sora2Pro(options: WiroSora2ProRequestOptions): WiroSora2ProRequest {
-    return new WiroSora2ProRequest(options);
   },
   veo31(options: WiroVeo31RequestOptions): WiroVeo31Request {
     return new WiroVeo31Request(options);

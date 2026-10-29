@@ -195,8 +195,6 @@ export {
   WiroSeedance20Ratio,
   WiroSeedance20Resolution,
   WiroSeedreamV4Size,
-  WiroSora2ProRatio,
-  WiroSora2ProResolution,
   WiroVeo31Ratio,
   WiroVeo31Resolution,
 } from './requests/request-enums';
@@ -223,8 +221,6 @@ export {
   type WiroSeedance20RequestOptions,
   WiroSeedreamV4Request,
   type WiroSeedreamV4RequestOptions,
-  WiroSora2ProRequest,
-  type WiroSora2ProRequestOptions,
   WiroVeo31Request,
   type WiroVeo31RequestOptions,
 } from './requests/typed-requests';

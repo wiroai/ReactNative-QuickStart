@@ -32,8 +32,6 @@ import {
   type WiroSeedance20Ratio,
   type WiroSeedance20Resolution,
   type WiroSeedreamV4Size,
-  type WiroSora2ProRatio,
-  type WiroSora2ProResolution,
   type WiroVeo31Ratio,
   type WiroVeo31Resolution,
 } from './request-enums';
@@ -401,36 +399,6 @@ export class WiroVeo31Request extends WiroTypedRequest {
     setString(json, 'resolution', this.options.resolution);
     setString(json, 'negativePrompt', this.options.negativePrompt);
     setNumber(json, 'seed', this.options.seed);
-    return finish(json);
-  }
-}
-
-export interface WiroSora2ProRequestOptions {
-  readonly inputImages?: readonly WiroFileInput[];
-  readonly prompt: string;
-  readonly ratio?: WiroSora2ProRatio;
-  readonly resolution?: WiroSora2ProResolution;
-  readonly seconds: number;
-}
-
-export class WiroSora2ProRequest extends WiroTypedRequest {
-  readonly options: Readonly<WiroSora2ProRequestOptions>;
-
-  constructor(options: WiroSora2ProRequestOptions) {
-    requireNonEmpty(options.prompt, 'prompt');
-    requireOneOf(options.seconds, [4, 8, 12, 16, 20], 'seconds');
-    super('openai', 'sora-2-pro');
-    this.options = freezeOptions(options);
-    Object.freeze(this);
-  }
-
-  parameters(): WiroJson {
-    const json = builder();
-    json.prompt = WiroValue.string(this.options.prompt);
-    json.seconds = stringInteger(this.options.seconds);
-    setFiles(json, 'inputImage', this.options.inputImages);
-    setString(json, 'resolution', this.options.resolution);
-    setString(json, 'ratio', this.options.ratio);
     return finish(json);
   }
 }

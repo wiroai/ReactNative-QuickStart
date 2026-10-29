@@ -132,7 +132,6 @@ Typed factories are available for:
 - Seedance 2.0
 - Kling V3
 - Veo 3.1
-- Sora 2 Pro
 - Hailuo 2.3 Fast
 - Grok Imagine Video
 - Lyria 3
