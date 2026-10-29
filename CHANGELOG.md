@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-10-29
+
+- The typed `Wiro.sora2Pro` / `WiroSora2ProRequest` binding is removed because
+  `openai/sora-2-pro` is not in the public Wiro AI catalog.
+
 ## 0.1.0 - 2026-10-29
 
 - First release on npm as `@wiro-ai/wiro-react-native` (developed as

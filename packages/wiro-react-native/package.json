@@ -1,6 +1,6 @@
 {
   "name": "@wiro-ai/wiro-react-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Official Wiro AI SDK for React Native and Expo: run image, video, audio and LLM models with typed requests and live task tracking",
   "keywords": [
     "wiro",
