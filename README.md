@@ -6,7 +6,7 @@
 
 Run image, video, audio and LLM models from React Native and Expo apps in TypeScript with the Wiro AI API: typed requests, live task tracking and file uploads.
 
-[![React Native 0.76+](https://img.shields.io/badge/React%20Native-0.76%2B-111111?style=for-the-badge&color=111111&logo=react&logoColor=white)](https://reactnative.dev) [![Expo SDK 54+](https://img.shields.io/badge/Expo%20SDK-54%2B-111111?style=for-the-badge&color=111111&logo=expo&logoColor=white)](https://expo.dev) [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=for-the-badge&color=111111)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@wiro-ai/wiro-react-native?style=for-the-badge&color=111111&logo=npm&logoColor=white)](https://www.npmjs.com/package/@wiro-ai/wiro-react-native) [![React Native 0.76+](https://img.shields.io/badge/React%20Native-0.76%2B-111111?style=for-the-badge&color=111111&logo=react&logoColor=white)](https://reactnative.dev) [![Expo SDK 54+](https://img.shields.io/badge/Expo%20SDK-54%2B-111111?style=for-the-badge&color=111111&logo=expo&logoColor=white)](https://expo.dev) [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=for-the-badge&color=111111)](LICENSE)
 
 [Website](https://wiro.ai) · [Models](https://wiro.ai/models) · [Docs](https://wiro.ai/docs/code-examples) · [Dashboard](https://wiro.ai/panel)
 
@@ -283,7 +283,7 @@ pnpm verify:exports
 | [Wiro-Plugin](https://github.com/wiroai/Wiro-Plugin)                   | Wiro AI plugin for Cursor, Claude Code, Gemini CLI and Devin |
 | [Swift-QuickStart](https://github.com/wiroai/Swift-QuickStart)         | WiroKit, the Wiro AI SDK for iOS                             |
 | [Kotlin-QuickStart](https://github.com/wiroai/Kotlin-QuickStart)       | WiroKit, the Wiro AI SDK for Android                         |
-| [Dart-QuickStart](https://github.com/wiroai/Dart-QuickStart)           | Wiro AI SDK for Dart and Flutter                             |
+| [Dart-QuickStart](https://github.com/wiroai/Dart-QuickStart)           | Wiro AI SDK for Dart and Flutter (`wiro` on pub.dev)         |
 | [Swift-Realtime](https://github.com/wiroai/Swift-Realtime)             | Realtime voice AI example for iOS                            |
 | [Kotlin-Realtime](https://github.com/wiroai/Kotlin-Realtime)           | Realtime voice AI example for Android                        |
 | [Dart-Realtime](https://github.com/wiroai/Dart-Realtime)               | Realtime voice AI example for Flutter                        |
