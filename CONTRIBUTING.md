@@ -41,6 +41,9 @@ pnpm pack:dry-run
 
 The example app tests run as part of `pnpm test`.
 
+`pnpm verify:hmac:hermes` runs the bundle in the Hermes VM, which React Native
+ships only for macOS, so run it on a Mac. CI runs it in a macOS job.
+
 ## Releases
 
 The package version and `WIRO_SDK_VERSION` must match; export verification

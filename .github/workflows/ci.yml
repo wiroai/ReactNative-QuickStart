@@ -61,10 +61,6 @@ jobs:
       - name: Verify exports
         run: pnpm verify:exports
 
-      - name: Verify Hermes HMAC
-        if: matrix.node == '22.18.0'
-        run: pnpm verify:hmac:hermes
-
       - name: Verify Expo configuration
         if: matrix.node == '22.18.0'
         run: pnpm expo:config
@@ -80,3 +76,28 @@ jobs:
       - name: Pack dry-run
         if: matrix.node == '22.18.0'
         run: pnpm pack:dry-run
+
+  hermes:
+    # React Native ships the Hermes VM that runs the bundle (`hermes
+    # -exec`) only for macOS; Linux and Windows get the compiler alone.
+    name: Hermes HMAC
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.18.0
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Hermes HMAC
+        run: pnpm verify:hmac:hermes
