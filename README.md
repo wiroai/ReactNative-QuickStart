@@ -246,11 +246,16 @@ Package reference: [`packages/wiro-react-native/README.md`](packages/wiro-react-
 ```sh
 corepack enable
 pnpm install
-pnpm --filter @wiro-ai/example start
+cp .env.example apps/example/.env
 ```
 
-Copy `.env.example` to `.env` and set `EXPO_PUBLIC_WIRO_API_KEY` for local
-development.
+Set `EXPO_PUBLIC_WIRO_API_KEY` in `apps/example/.env` for local development.
+Expo reads `.env` files from the example app folder, not the repository root.
+Then start the app:
+
+```sh
+pnpm --filter @wiro-ai/example start
+```
 
 ## Agent skill
 
