@@ -41,7 +41,10 @@ const apiKey = process.env.EXPO_PUBLIC_WIRO_API_KEY?.trim() ?? '';
 const devClient = apiKey.length > 0 ? new WiroClient({ apiKey }) : null;
 
 // Key plus secret (local development only): the SDK signs each request with HMAC
-const signedClient = new WiroClient({ apiKey: 'YOUR_API_KEY', apiSecret: 'YOUR_API_SECRET' });
+const signedClient = new WiroClient({
+  apiKey: 'YOUR_API_KEY',
+  apiSecret: 'YOUR_API_SECRET',
+});
 ```
 
 - Match the project's auth method: add `apiSecret` for a Signature-Based project and leave it out for an API Key Only project. Projects and keys are created at https://wiro.ai/panel/project/new. Never ask the user to paste a key or secret into the chat.
@@ -126,9 +129,13 @@ const token = run.taskToken; // keep run.taskId and the token
 if (token === undefined) throw new Error('The run returned no task token.');
 try {
   const task = await client.waitForTask(token);
-  console.log(task.isSuccessful, task.outputs.map((output) => output.url?.toString()));
+  console.log(
+    task.isSuccessful,
+    task.outputs.map((output) => output.url?.toString()),
+  );
 } catch (error) {
-  if (!(error instanceof WiroTimeoutError || error instanceof WiroNetworkError)) throw error;
+  if (!(error instanceof WiroTimeoutError || error instanceof WiroNetworkError))
+    throw error;
   const task = await client.getTask(token); // look it up, and call waitForTask again if it is still running
 }
 ```
