@@ -252,6 +252,14 @@ pnpm --filter @wiro-ai/example start
 Copy `.env.example` to `.env` and set `EXPO_PUBLIC_WIRO_API_KEY` for local
 development.
 
+## Agent skill
+
+This repository includes an agent skill, `wiro-react-native`, in [`skills/wiro-react-native/SKILL.md`](./skills/wiro-react-native/SKILL.md). It shows coding agents such as Claude Code, Codex and Cursor how to use this SDK in React Native and Expo apps. Add it to your agent with:
+
+```bash
+npx skills add wiroai/ReactNative-QuickStart --skill wiro-react-native
+```
+
 ## Documentation
 
 - Product docs: [https://wiro.ai/docs](https://wiro.ai/docs)
