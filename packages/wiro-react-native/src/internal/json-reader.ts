@@ -7,6 +7,7 @@ import {
   WiroStringValue,
   type WiroValue,
   parseWiroValue,
+  stringifyWiroValue,
 } from '../core/wiro-value';
 
 export type MalformedJsonHandler = (raw: string) => void;
@@ -22,6 +23,18 @@ export function readString(value: WiroValue | undefined): string | undefined {
     return value.value ? 'true' : 'false';
   }
   return undefined;
+}
+
+/** Reads arrays and objects as compact JSON text, other values as strings. */
+export function readJsonText(value: WiroValue | undefined): string | undefined {
+  if (value instanceof WiroArrayValue || value instanceof WiroObjectValue) {
+    try {
+      return stringifyWiroValue(value);
+    } catch {
+      return undefined;
+    }
+  }
+  return readString(value);
 }
 
 export function readBoolean(value: WiroValue | undefined): boolean | undefined {

@@ -60,6 +60,29 @@ describe('discovery model decoding', () => {
     expect(Object.isFrozen(model.categories)).toBe(true);
   });
 
+  it('keeps the dynamicprice JSON string from Tool/List', () => {
+    const tiers = '[{"inputs":{},"price":0.09,"priceMethod":"cpr"}]';
+
+    const model = WiroModel.parse(
+      parseWiroJson(JSON.stringify({ dynamicprice: tiers })),
+    );
+
+    expect(model.dynamicPrice).toBe(tiers);
+  });
+
+  it('encodes the dynamicprice array from Tool/Detail as JSON text', () => {
+    const tiers = [{ inputs: {}, price: 0.039, priceMethod: 'cpo' }];
+
+    const schema = WiroModelSchema.parse(
+      parseWiroJson(JSON.stringify({ dynamicprice: tiers })),
+    );
+
+    expect(schema.model.dynamicPrice).toBe(
+      '[{"inputs":{},"price":0.039,"priceMethod":"cpo"}]',
+    );
+    expect(JSON.parse(schema.model.dynamicPrice ?? '')).toEqual(tiers);
+  });
+
   it('uses slug fallbacks and rejects invalid derived IDs', () => {
     const fallback = WiroModel.parse(
       parseWiroJson('{"slugowner":"owner","slugproject":"project"}'),

@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseWiroValue, WiroObjectValue, WiroValue } from '../src';
+import {
+  parseWiroValue,
+  WiroFileInput,
+  WiroObjectValue,
+  WiroValue,
+} from '../src';
 import {
   readDate,
   readDouble,
   readInteger,
+  readJsonText,
   readObject,
   readObjects,
   readStringList,
@@ -62,6 +68,20 @@ describe('lenient JSON reader', () => {
     expect(objects).toHaveLength(1);
     expect(objects[0]?.id).toEqual(WiroValue.string('nested'));
     expect(readObjects(undefined)).toEqual([]);
+  });
+
+  it('reads arrays and objects as JSON text and other values as strings', () => {
+    const unresolvedFile = WiroValue.array([
+      WiroValue.fileInput(WiroFileInput.bytes(new Uint8Array([1]), 'a.png')),
+    ]);
+
+    expect(readJsonText(parseWiroValue('{"a":[1.50,true,null]}'))).toBe(
+      '{"a":[1.50,true,null]}',
+    );
+    expect(readJsonText(WiroValue.string('text'))).toBe('text');
+    expect(readJsonText(WiroValue.number(2))).toBe('2');
+    expect(readJsonText(undefined)).toBeUndefined();
+    expect(readJsonText(unresolvedFile)).toBeUndefined();
   });
 
   it('accepts only valid non-empty string URLs', () => {

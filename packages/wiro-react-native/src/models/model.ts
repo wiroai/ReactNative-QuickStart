@@ -4,6 +4,7 @@ import {
   type MalformedJsonHandler,
   readDate,
   readInteger,
+  readJsonText,
   readObject,
   readString,
   readStringList,
@@ -73,6 +74,11 @@ export class WiroModel {
   readonly computingTime: string | undefined;
   readonly cps: string | undefined;
   readonly description: string | undefined;
+  /**
+   * JSON text of the model's pricing tiers, such as
+   * `[{"inputs":{},"price":0.09,"priceMethod":"cpr"}]`. Read from the
+   * `dynamicprice` field of both `Tool/List` and `Tool/Detail` responses.
+   */
   readonly dynamicPrice: string | undefined;
   readonly id: string;
   readonly owner: string;
@@ -124,7 +130,7 @@ export class WiroModel {
       computingTime: readString(json.computingtime),
       cps: readString(json.cps),
       description: readString(json.description),
-      dynamicPrice: readString(json.dynamicprice),
+      dynamicPrice: readJsonText(json.dynamicprice),
       id: readString(json.id) ?? '',
       imageUrl: readUrl(json.image),
       owner:
