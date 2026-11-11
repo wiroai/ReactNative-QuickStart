@@ -58,7 +58,7 @@
   },
   "peerDependencies": {
     "expo": ">=54.0.0",
-    "expo-file-system": ">=19.0.0 <20.0.0",
+    "expo-file-system": ">=19.0.0 <59.0.0",
     "react-native": ">=0.76.0"
   },
   "publishConfig": {
@@ -66,6 +66,6 @@
     "provenance": true
   },
   "dependencies": {
-    "@noble/hashes": "^2.3.0"
+    "@noble/hashes": "^2.4.0"
   }
 }

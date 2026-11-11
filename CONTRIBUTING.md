@@ -7,7 +7,7 @@ Participation in this project is governed by the
 
 ## Requirements
 
-- Node.js 22.14.0 or newer
+- Node.js 22.18.0 or newer
 - pnpm 11.21.0 via Corepack
 - Git
 
@@ -41,8 +41,10 @@ pnpm pack:dry-run
 
 The example app tests run as part of `pnpm test`.
 
-`pnpm verify:hmac:hermes` runs the bundle in the Hermes VM, which React Native
-ships only for macOS, so run it on a Mac. CI runs it in a macOS job.
+`pnpm verify:hmac:hermes` runs the bundle in the Hermes VM that React Native
+apps embed. React Native publishes that VM only as a macOS framework, so the
+script builds a small runner against it with `clang++`. Run it on a Mac with the
+Xcode command line tools. CI runs it in a macOS job.
 
 ## Releases
 

@@ -1,4 +1,7 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -19,6 +22,9 @@ const exampleDirectory = join(workspaceDirectory, 'apps', 'example');
 const expoPackage = require.resolve('expo/package.json', {
   paths: [exampleDirectory],
 });
+const reactNativePackage = require.resolve('react-native/package.json', {
+  paths: [exampleDirectory],
+});
 const babelCore = require(
   require.resolve('@babel/core', {
     paths: [dirname(expoPackage)],
@@ -30,30 +36,15 @@ const transformClasses = require(
   }),
 ).default;
 const { build } = await import(pathToFileURL(esbuildModule).href);
-const temporaryDirectory = await mkdtemp(join(tmpdir(), 'wiro-hermes-'));
-const bundlePath = join(temporaryDirectory, 'hmac-smoke.js');
 
-const platformDirectory = {
-  darwin: 'osx-bin',
-  linux: 'linux64-bin',
-  win32: 'win64-bin',
-}[process.platform];
-
-if (platformDirectory === undefined) {
+if (process.platform !== 'darwin') {
+  // React Native publishes the Hermes VM as a macOS framework only.
   throw new Error(`Hermes verification is unsupported on ${process.platform}.`);
 }
 
-const compilerPath = join(
-  workspaceDirectory,
-  'apps',
-  'example',
-  'node_modules',
-  'react-native',
-  'sdks',
-  'hermesc',
-  platformDirectory,
-  process.platform === 'win32' ? 'hermes.exe' : 'hermes',
-);
+const runnerPath = await prepareHermesRunner(await readHermesVersion());
+const temporaryDirectory = await mkdtemp(join(tmpdir(), 'wiro-hermes-'));
+const bundlePath = join(temporaryDirectory, 'hmac-smoke.js');
 
 try {
   await build({
@@ -95,9 +86,12 @@ try {
   }
   await writeFile(bundlePath, transformed.code, 'utf8');
 
-  const result = spawnSync(compilerPath, ['-O', '-exec', bundlePath], {
+  const result = spawnSync(runnerPath, [bundlePath], {
     encoding: 'utf8',
   });
+  if (result.error !== undefined) {
+    throw result.error;
+  }
   if (result.status !== 0) {
     process.stderr.write(result.stderr);
     process.stdout.write(result.stdout);
@@ -111,4 +105,103 @@ try {
     force: true,
     recursive: true,
   });
+}
+
+// The Hermes release that React Native embeds in apps.
+async function readHermesVersion() {
+  const properties = await readFile(
+    join(
+      dirname(reactNativePackage),
+      'sdks',
+      'hermes-engine',
+      'version.properties',
+    ),
+    'utf8',
+  );
+  const version = /^HERMES_VERSION_NAME=(\S+)$/mu.exec(properties)?.[1];
+  if (version === undefined) {
+    throw new Error('Could not read the Hermes version of React Native.');
+  }
+  return version;
+}
+
+// Builds scripts/hermes-runner.cpp against the hermesvm.framework from the
+// Hermes release artifact that CocoaPods installs for React Native apps.
+async function prepareHermesRunner(version) {
+  const cacheDirectory = join(
+    workspaceDirectory,
+    'node_modules',
+    '.cache',
+    `wiro-hermes-${version}`,
+  );
+  const runner = join(cacheDirectory, 'hermes-runner');
+  if (existsSync(runner)) {
+    return runner;
+  }
+
+  const archiveName = `hermes-ios-${version}-hermes-ios-release.tar.gz`;
+  const archiveUrl = `https://repo1.maven.org/maven2/com/facebook/hermes/hermes-ios/${version}/${archiveName}`;
+  const archive = Buffer.from(await (await download(archiveUrl)).arrayBuffer());
+  const checksum = (await (await download(`${archiveUrl}.sha256`)).text())
+    .trim()
+    .split(/\s+/u)[0];
+  if (createHash('sha256').update(archive).digest('hex') !== checksum) {
+    throw new Error(`Checksum mismatch for ${archiveName}.`);
+  }
+
+  await mkdir(cacheDirectory, { recursive: true });
+  const archivePath = join(cacheDirectory, archiveName);
+  await writeFile(archivePath, archive);
+  try {
+    run('tar', [
+      '-xzf',
+      archivePath,
+      '-C',
+      cacheDirectory,
+      './destroot/include',
+      './destroot/Library/Frameworks/macosx',
+    ]);
+  } finally {
+    await rm(archivePath, { force: true });
+  }
+
+  const frameworks = join(
+    cacheDirectory,
+    'destroot',
+    'Library',
+    'Frameworks',
+    'macosx',
+  );
+  run('clang++', [
+    '-std=c++20',
+    '-O1',
+    `-I${join(cacheDirectory, 'destroot', 'include')}`,
+    `-F${frameworks}`,
+    '-framework',
+    'hermesvm',
+    `-Wl,-rpath,${frameworks}`,
+    join(scriptDirectory, 'hermes-runner.cpp'),
+    '-o',
+    runner,
+  ]);
+  return runner;
+}
+
+async function download(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed with HTTP ${response.status}: ${url}`);
+  }
+  return response;
+}
+
+function run(command, args) {
+  const result = spawnSync(command, args, { encoding: 'utf8' });
+  if (result.error !== undefined) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    process.stderr.write(result.stderr);
+    throw new Error(`${command} exited with status ${result.status}.`);
+  }
 }

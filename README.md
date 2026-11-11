@@ -37,7 +37,7 @@ WebSocket. Uploads accept bytes, Blobs, streams and Expo picker URIs.
 - React Native 0.76+
 - Expo SDK 54+ (Expo Go supported)
 - `expo-file-system` peer dependency
-- Node.js 22.14+ for development
+- Node.js 22.18+ for development
 - A [Wiro AI project and API key](https://wiro.ai/panel/project/new)
 
 ## Installation

@@ -256,4 +256,4 @@ aborts its in-flight work.
 ## Requirements
 
 - React Native 0.76 or newer
-- Node.js 22.14.0 or newer for development
+- Node.js 22.18.0 or newer for development

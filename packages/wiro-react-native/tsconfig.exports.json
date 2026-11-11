@@ -5,6 +5,9 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
+    // React Native 0.88's generated declarations fail strict checks of
+    // their own (TS2411, TS2344, TS2416). Its app templates skip them too.
+    "skipLibCheck": true,
     "target": "ES2022",
     "types": ["react-native"]
   },

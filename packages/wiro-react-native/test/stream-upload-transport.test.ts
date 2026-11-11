@@ -47,6 +47,32 @@ describe('ExpoWiroStreamUploadTransport', () => {
     expect(progress.some((event) => event.phase === 'uploading')).toBe(true);
   });
 
+  it('writes with writeBytesSync when expo-file-system 58 provides it', async () => {
+    const runtime = new FakeExpoFileSystem();
+    runtime.asyncWriteBytes = true;
+    const transport = runtime.transport();
+    const contentLength = 600 * 1024;
+
+    const response = await transport.upload({
+      contentLength,
+      fileName: 'payload.bin',
+      headers: {},
+      maxResponseBodyBytes: 1_024,
+      stream: generatedBytes(contentLength, 300 * 1024),
+      url: 'https://api.wiro.ai/v1/File/Upload',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(runtime.asyncWriteCount).toBe(0);
+    expect(runtime.syncWriteCount).toBeGreaterThan(0);
+    expect(runtime.totalWritten).toBeGreaterThan(contentLength);
+    expect(runtime.maximumWriteBytes).toBeLessThanOrEqual(256 * 1024);
+    expect(runtime.framingText).toContain(
+      'name="file"; filename="payload.bin"',
+    );
+    expect(runtime.directoryDeleted).toBe(true);
+  });
+
   it('rejects declared length mismatches before native upload', async () => {
     const runtime = new FakeExpoFileSystem();
     const transport = runtime.transport();
@@ -139,6 +165,8 @@ describe('ExpoWiroStreamUploadTransport', () => {
 });
 
 class FakeExpoFileSystem {
+  asyncWriteBytes = false;
+  asyncWriteCount = 0;
   cancelCount = 0;
   directoryDeleted = false;
   fileName: string | undefined;
@@ -146,6 +174,7 @@ class FakeExpoFileSystem {
   keepUploadPending = false;
   maximumWriteBytes = 0;
   responseBody = '{"result":true}';
+  syncWriteCount = 0;
   totalWritten = 0;
   uploadOptions: Record<string, unknown> | undefined;
   uploadStarted = false;
@@ -193,20 +222,36 @@ class FakeExpoFileSystem {
 
       open(): {
         close(): void;
-        writeBytes(bytes: Uint8Array): void;
+        writeBytes(bytes: Uint8Array): Promise<void> | void;
+        writeBytesSync?(bytes: Uint8Array): void;
       } {
+        const write = (bytes: Uint8Array): void => {
+          runtime.totalWritten += bytes.byteLength;
+          if (bytes.byteLength < 1_024) {
+            runtime.framingText += String.fromCharCode(...bytes);
+          }
+          runtime.maximumWriteBytes = Math.max(
+            runtime.maximumWriteBytes,
+            bytes.byteLength,
+          );
+        };
+        if (runtime.asyncWriteBytes) {
+          // expo-file-system 58: writeBytes is async, writeBytesSync blocks.
+          return {
+            close() {},
+            async writeBytes() {
+              runtime.asyncWriteCount += 1;
+              throw new Error('async writeBytes must not be used');
+            },
+            writeBytesSync(bytes) {
+              runtime.syncWriteCount += 1;
+              write(bytes);
+            },
+          };
+        }
         return {
           close() {},
-          writeBytes(bytes) {
-            runtime.totalWritten += bytes.byteLength;
-            if (bytes.byteLength < 1_024) {
-              runtime.framingText += String.fromCharCode(...bytes);
-            }
-            runtime.maximumWriteBytes = Math.max(
-              runtime.maximumWriteBytes,
-              bytes.byteLength,
-            );
-          },
+          writeBytes: write,
         };
       }
     }

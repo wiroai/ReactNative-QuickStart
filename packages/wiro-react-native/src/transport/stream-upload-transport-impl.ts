@@ -41,7 +41,10 @@ interface ExpoFile {
 
 interface ExpoFileHandle {
   close(): void;
-  writeBytes(bytes: Uint8Array): void;
+  // expo-file-system 19 to 57 write synchronously here. From 58 on this
+  // returns a promise, and the blocking write moved to writeBytesSync.
+  writeBytes(bytes: Uint8Array): unknown;
+  writeBytesSync?: (bytes: Uint8Array) => void;
 }
 
 interface ExpoUploadProgress {
@@ -279,12 +282,15 @@ function writeBounded(
     offset += FILE_WRITE_CHUNK_BYTES
   ) {
     throwIfAborted(signal);
-    handle.writeBytes(
-      bytes.subarray(
-        offset,
-        Math.min(offset + FILE_WRITE_CHUNK_BYTES, bytes.byteLength),
-      ),
+    const chunk = bytes.subarray(
+      offset,
+      Math.min(offset + FILE_WRITE_CHUNK_BYTES, bytes.byteLength),
     );
+    if (handle.writeBytesSync === undefined) {
+      handle.writeBytes(chunk);
+    } else {
+      handle.writeBytesSync(chunk);
+    }
   }
 }
 

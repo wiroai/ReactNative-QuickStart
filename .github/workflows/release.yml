@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   hermes:
-    # React Native ships the Hermes VM that runs the bundle (`hermes
-    # -exec`) only for macOS; Linux and Windows get the compiler alone.
+    # React Native publishes the Hermes VM that runs the bundle only as a
+    # macOS framework; the script links a small runner against it.
     name: Hermes HMAC
     runs-on: macos-latest
     timeout-minutes: 30

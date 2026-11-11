@@ -15,7 +15,7 @@ npx expo install expo-file-system
 ```
 
 - Requires React Native 0.76+ and Expo SDK 54+. Expo Go works. Bare React Native apps must have Expo Modules configured.
-- Peer dependencies: `react-native`, `expo` and `expo-file-system` 19.x (`npx expo install` picks the version for your Expo SDK). `yarn add` and `pnpm add` work too.
+- Peer dependencies: `react-native`, `expo` and `expo-file-system` for Expo SDK 54 to 58 (`npx expo install` picks the version for your Expo SDK). `yarn add` and `pnpm add` work too.
 
 ## Credentials and the client
 
