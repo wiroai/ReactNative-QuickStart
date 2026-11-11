@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 - 2026-11-11
+
+- Supports Expo SDK 55 to 58 as well as 54: the `expo-file-system` peer range
+  is now `>=19.0.0 <59.0.0`.
+- `uploadStream` writes with `writeBytesSync` on `expo-file-system` 58, where
+  `writeBytes` became asynchronous.
+- `@noble/hashes` is now `^2.4.0`.
+
 ## 0.1.2 - 2026-11-07
 
 - `WiroModel.dynamicPrice` reads `dynamicprice` as JSON text from both
