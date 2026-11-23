@@ -89,8 +89,8 @@ importers:
         specifier: 30.5.2
         version: 30.5.2(@types/node@26.2.0)(supports-color@8.1.1)
       jest-expo:
-        specifier: 58.0.14
-        version: 58.0.14(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(expo@58.0.23)(jest@30.5.2(@types/node@26.2.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
+        specifier: 58.0.15
+        version: 58.0.15(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(expo@58.0.23)(jest@30.5.2(@types/node@26.2.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
@@ -3550,8 +3550,8 @@ packages:
     resolution: {integrity: sha512-Ciz4KgTGIbojxSKpuFImgWJj5EyqfE8xMq9NxWmOXnQywHHS03H9Mv+vaCB29J5pr3JBrY27WbRV18rBdjh8Dg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  jest-expo@58.0.14:
-    resolution: {integrity: sha512-LSIlvfPizQHBOmwgEE1qUgOeXl55aWJPXziY5O0iQEUUS+aAF/CWgFEjHmlmMiBx5lfSLkbb05Boi9GIhrTi2g==}
+  jest-expo@58.0.15:
+    resolution: {integrity: sha512-3m7JlS6Lmay8FfhTFGitmSjktO5uIgerxRidxv223MRauZnJjfxbKzK8A/ATot8Y+1Ac9qZY518+O7RQ2Xe58Q==}
     hasBin: true
     peerDependencies:
       '@react-native/jest-preset': ^0.88.1
@@ -5483,7 +5483,7 @@ snapshots:
 
   '@babel/parser@7.29.8':
     dependencies:
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.11
 
   '@babel/plugin-proposal-decorators@7.29.7(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
@@ -9198,7 +9198,7 @@ snapshots:
       jest-util: 30.5.1
       jest-validate: 30.5.1
 
-  jest-expo@58.0.14(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(expo@58.0.23)(jest@30.5.2(@types/node@26.2.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
+  jest-expo@58.0.15(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(expo@58.0.23)(jest@30.5.2(@types/node@26.2.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1):
     dependencies:
       '@jest/create-cache-key-function': 30.5.1
       '@jest/globals': 30.5.2(supports-color@8.1.1)
@@ -9396,10 +9396,10 @@ snapshots:
   jest-snapshot@30.5.2(supports-color@8.1.1):
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
-      '@babel/generator': 7.29.8
+      '@babel/generator': 7.29.13
       '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))
       '@babel/plugin-syntax-typescript': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.11
       '@jest/expect-utils': 30.5.2
       '@jest/get-type': 30.5.0
       '@jest/snapshot-utils': 30.5.1
